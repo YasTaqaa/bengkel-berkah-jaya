@@ -1,5 +1,7 @@
 config.php
 vendor/
-assets/img/uploads/
+assets/img/galeri/
+assets/img/layanan/
+assets/img/tim/
 .DS_Store
 Thumbs.db
