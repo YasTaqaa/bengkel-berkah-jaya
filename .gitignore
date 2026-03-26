@@ -1,0 +1,5 @@
+config.php
+vendor/
+assets/img/uploads/
+.DS_Store
+Thumbs.db
