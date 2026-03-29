@@ -131,31 +131,29 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
     }
 
     /* Tombol aksi */
-    .btn-simpan {
-        font-size: 0.75rem;
+    .btn-simpan,
+    .btn-aksi {
+        font-size: 0.78rem;
         font-weight: 600;
-        color: #fff;
-        background: #2563eb;
         border: none;
-        padding: 4px 10px;
+        padding: 5px 0;
         border-radius: 6px;
         cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        display: block;
+        width: 80px;
+        text-align: center;
         transition: background 0.2s;
+    }
+
+    .btn-simpan {
+        color: #fff;
+        background: #2563eb;
     }
 
     .btn-simpan:hover {
         background: #1d4ed8;
-    }
-
-    .btn-aksi {
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: none;
-        padding: 4px 10px;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: background 0.2s;
-        white-space: nowrap;
     }
 
     .btn-aksi.baru {
@@ -194,22 +192,47 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
         background: #fecaca;
     }
 
-    .col-no {
-        width: 40px;
-        text-align: center;
-    }
-
     .table-scroll {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
 
-    .cell-truncate {
-        max-width: 140px;
-        white-space: nowrap;
+    .cell-expand {
+        max-width: 160px;
+    }
+
+    .cell-text {
+        max-height: 1.4em;
         overflow: hidden;
-        text-overflow: ellipsis;
-        cursor: default;
+        font-size: 0.83rem;
+        line-height: 1.4em;
+        word-break: break-word;
+    }
+
+    .cell-text.expanded {
+        max-height: none;
+        overflow: visible;
+        white-space: pre-wrap;
+    }
+
+    .btn-expand {
+        font-size: 0.7rem;
+        color: #2563eb;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        margin-top: 3px;
+        display: block;
+    }
+
+    .btn-expand:hover {
+        text-decoration: underline;
+    }
+
+    .col-no {
+        width: 40px;
+        text-align: center;
     }
 
     @media (max-width: 575.98px) {
@@ -270,13 +293,27 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                                 <td><strong><?php echo htmlspecialchars($p['nama']); ?></strong></td>
                                 <td><?php echo htmlspecialchars($p['hp']); ?></td>
                                 <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
-                                <td class="text-muted cell-truncate"
-                                    title="<?php echo htmlspecialchars($p['lokasi']); ?>">
-                                    <?php echo htmlspecialchars($p['lokasi']); ?>
+                                <td class="cell-expand">
+                                    <div class="cell-text" id="lok-<?php echo $p['id']; ?>">
+                                        <?php echo htmlspecialchars($p['lokasi']) ?: '-'; ?>
+                                    </div>
+                                    <?php if (strlen($p['lokasi']) > 40) { ?>
+                                    <button type="button" class="btn-expand"
+                                        onclick="toggleExpand('lok-<?php echo $p['id']; ?>', this)">
+                                        Lihat semua
+                                    </button>
+                                    <?php } ?>
                                 </td>
-                                <td class="text-muted cell-truncate"
-                                    title="<?php echo htmlspecialchars($p['catatan']); ?>">
-                                    <?php echo htmlspecialchars($p['catatan']) ?: '-'; ?>
+                                <td class="cell-expand">
+                                    <div class="cell-text" id="cat-<?php echo $p['id']; ?>">
+                                        <?php echo htmlspecialchars($p['catatan']) ?: '-'; ?>
+                                    </div>
+                                    <?php if (strlen($p['catatan']) > 40) { ?>
+                                    <button type="button" class="btn-expand"
+                                        onclick="toggleExpand('cat-<?php echo $p['id']; ?>', this)">
+                                        Lihat semua
+                                    </button>
+                                    <?php } ?>
                                 </td>
                                 <td>
                                     <input type="text" name="ukuran"
@@ -295,7 +332,7 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                                 <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
                                 <td class="text-muted"><?php echo $p['tgl_selesai'] ?: '-'; ?></td>
                                 <td>
-                                    <div class="d-flex flex-wrap gap-1">
+                                    <div class="d-flex flex-column gap-1" style="width:80px;">
                                         <button type="submit" class="btn-simpan">
                                             <i class="bi bi-floppy me-1"></i>Simpan
                                         </button>
@@ -321,6 +358,13 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function toggleExpand(id, btn) {
+        const el = document.getElementById(id);
+        const expanded = el.classList.toggle('expanded');
+        btn.textContent = expanded ? 'Sembunyikan' : 'Lihat semua';
+    }
+    </script>
 </body>
 
 </html>
