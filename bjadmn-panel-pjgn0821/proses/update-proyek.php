@@ -11,14 +11,17 @@ if (isset($_GET['aksi'], $_GET['id'])) {
     $aks = $_GET['aksi'];
 
     if ($aks === 'baru') {
-        mysqli_query($conn,
-            "UPDATE proyek SET status='baru', tgl_selesai=NULL WHERE id=$id");
+        $stmt = $conn->prepare("UPDATE proyek SET status='baru', tgl_selesai=NULL WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
     } elseif ($aks === 'proses') {
-        mysqli_query($conn,
-            "UPDATE proyek SET status='proses', tgl_selesai=NULL WHERE id=$id");
+        $stmt = $conn->prepare("UPDATE proyek SET status='proses', tgl_selesai=NULL WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
     } elseif ($aks === 'selesai') {
-        mysqli_query($conn,
-            "UPDATE proyek SET status='selesai', tgl_selesai=NOW() WHERE id=$id");
+        $stmt = $conn->prepare("UPDATE proyek SET status='selesai', tgl_selesai=NOW() WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
     }
 
     header("Location: ../proyek.php");
@@ -31,8 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ukuran = input_filter($conn, $_POST['ukuran']);
     $harga  = (float)$_POST['harga'];
 
-    mysqli_query($conn,
-        "UPDATE proyek SET ukuran='$ukuran', harga=$harga WHERE id=$id");
+    $stmt = $conn->prepare("UPDATE proyek SET ukuran=?, harga=? WHERE id=?");
+    $stmt->bind_param("sdi", $ukuran, $harga, $id);
+    $stmt->execute();
 
     header("Location: ../proyek.php");
     exit;

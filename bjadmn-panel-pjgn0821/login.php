@@ -7,7 +7,30 @@ if (isset($_SESSION['admin_login']) && $_SESSION['admin_login'] === true) {
 }
 
 $error = "";
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+// ===== LIMIT PERCOBAAN LOGIN =====
+if (!isset($_SESSION['login_attempts'])) $_SESSION['login_attempts'] = 0;
+if (!isset($_SESSION['login_lockout']))  $_SESSION['login_lockout']  = 0;
+
+$max_attempts  = 5;
+$lockout_time  = 15 * 60; // 15 menit dalam detik
+$sisa_waktu    = 0;
+
+// Cek apakah sedang dalam masa lockout
+if ($_SESSION['login_lockout'] > 0) {
+    $sisa_waktu = $_SESSION['login_lockout'] - time();
+    if ($sisa_waktu <= 0) {
+        // Lockout sudah habis, reset
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['login_lockout']  = 0;
+        $sisa_waktu = 0;
+    } else {
+        $menit  = ceil($sisa_waktu / 60);
+        $error  = "Terlalu banyak percobaan gagal. Coba lagi dalam {$menit} menit.";
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
     $username = input_filter($conn, $_POST['username']);
     $password = $_POST['password'];
 
@@ -15,16 +38,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $res = mysqli_query($conn, $sql);
     if ($row = mysqli_fetch_assoc($res)) {
         if (password_verify($password, $row['password'])) {
-            $_SESSION['admin_login'] = true;
-            $_SESSION['admin_user']  = $row['username'];
-            $_SESSION['admin_id']    = $row['id'];
+            // Login berhasil — reset counter
+            $_SESSION['login_attempts'] = 0;
+            $_SESSION['login_lockout']  = 0;
+            $_SESSION['admin_login']    = true;
+            $_SESSION['admin_user']     = $row['username'];
+            $_SESSION['admin_id']       = $row['id'];
+            // Regenerate session ID untuk keamanan
+            session_regenerate_id(true);
             header("Location: index.php");
             exit;
         } else {
-            $error = "Username atau password salah.";
+            $_SESSION['login_attempts']++;
+            $sisa = $max_attempts - $_SESSION['login_attempts'];
+            if ($_SESSION['login_attempts'] >= $max_attempts) {
+                $_SESSION['login_lockout'] = time() + $lockout_time;
+                $error = "Terlalu banyak percobaan gagal. Akun dikunci selama 15 menit.";
+            } else {
+                $error = "Username atau password salah. Sisa percobaan: {$sisa}x.";
+            }
         }
     } else {
-        $error = "Username atau password salah.";
+        $_SESSION['login_attempts']++;
+        $sisa = $max_attempts - $_SESSION['login_attempts'];
+        if ($_SESSION['login_attempts'] >= $max_attempts) {
+            $_SESSION['login_lockout'] = time() + $lockout_time;
+            $error = "Terlalu banyak percobaan gagal. Akun dikunci selama 15 menit.";
+        } else {
+            $error = "Username atau password salah. Sisa percobaan: {$sisa}x.";
+        }
     }
 }
 ?>

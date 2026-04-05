@@ -51,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
     body {
-        min-height: 100vh;
         background: #f1f5f9;
         font-family: system-ui, sans-serif;
         font-size: 0.9rem;
@@ -62,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 14px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         padding: 28px;
-        max-width: 440px;
+        width: 100%;
+        max-width: 420px;
     }
 
     .form-card h5 {
@@ -156,17 +156,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <?php include "navbar-menu.php"; ?>
 
-    <div class="container-fluid px-3 px-md-4 py-4">
+    <div class="container-fluid px-3 px-md-4 py-4 d-flex flex-column align-items-center">
 
         <?php if ($sukses): ?>
-        <div class="alert alert-success mb-3" style="max-width:440px;">
+        <div class="alert alert-success mb-3" style="max-width:440px; width:100%;">
             <i class="bi bi-check-circle-fill text-success"></i>
             <?php echo $sukses; ?>
         </div>
         <?php endif; ?>
 
         <?php if ($error): ?>
-        <div class="alert alert-danger mb-3" style="max-width:440px;">
+        <div class="alert alert-danger mb-3" style="max-width:440px; width:100%;">
             <i class="bi bi-exclamation-circle-fill text-danger"></i>
             <?php echo $error; ?>
         </div>

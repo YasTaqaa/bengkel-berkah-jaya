@@ -91,9 +91,22 @@ $list = mysqli_query($conn, "SELECT * FROM karyawan ORDER BY urutan ASC, id ASC"
         font-size: 0.85rem;
     }
 
-    .table td img {
-        border-radius: 6px;
+    .avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
         object-fit: cover;
+        border: 2px solid #e2e8f0;
+    }
+
+    .avatar-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-edit {
@@ -168,7 +181,6 @@ $list = mysqli_query($conn, "SELECT * FROM karyawan ORDER BY urutan ASC, id ASC"
     <?php include "navbar-menu.php"; ?>
 
     <div class="container-fluid px-3 px-md-4 py-4">
-
         <div class="admin-card">
             <div class="admin-card-header">
                 <span>Data Tim / Karyawan</span>
@@ -181,24 +193,30 @@ $list = mysqli_query($conn, "SELECT * FROM karyawan ORDER BY urutan ASC, id ASC"
                     <thead>
                         <tr>
                             <th class="col-no">No</th>
-                            <th>Foto</th>
+                            <th class="col-foto">Foto</th>
                             <th>Nama</th>
                             <th>Jabatan</th>
                             <th>Pengalaman</th>
                             <th class="col-urutan">Urutan</th>
-                            <th>Aksi</th>
+                            <th class="col-aksi">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $no = 1; while ($t = mysqli_fetch_assoc($list)) { ?>
                         <tr>
-                            <td class="text-muted"><?php echo $no++; ?></td>
+                            <td class="col-no text-muted"><?php echo $no++; ?></td>
                             <td>
                                 <?php if ($t['foto']) { ?>
-                                <img src="../assets/img/tim/<?php echo htmlspecialchars($t['foto']); ?>" width="70"
-                                    height="70">
+                                <img src="../assets/img/tim/<?php echo htmlspecialchars($t['foto']); ?>" class="avatar"
+                                    alt="<?php echo htmlspecialchars($t['nama']); ?>">
                                 <?php } else { ?>
-                                <span class="text-muted">-</span>
+                                <div class="avatar-placeholder">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="#94a3b8" />
+                                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#94a3b8" stroke-width="2"
+                                            stroke-linecap="round" />
+                                    </svg>
+                                </div>
                                 <?php } ?>
                             </td>
                             <td><strong><?php echo htmlspecialchars($t['nama']); ?></strong></td>
@@ -218,7 +236,6 @@ $list = mysqli_query($conn, "SELECT * FROM karyawan ORDER BY urutan ASC, id ASC"
                 </table>
             </div>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
