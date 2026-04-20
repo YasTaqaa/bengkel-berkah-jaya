@@ -5,6 +5,10 @@ if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     exit;
 }
 $halaman_aktif = basename($_SERVER['PHP_SELF']);
+
+// Hitung pesanan baru untuk badge notifikasi
+$notif = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS jml FROM proyek WHERE status='baru'"));
+$jml_notif = (int)$notif['jml'];
 ?>
 <style>
 #adminNav {
@@ -36,6 +40,8 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
 }
 
 #adminNav .navbar-brand {
+    display: flex;
+    align-items: center;
     font-size: 0.92rem;
     font-weight: 700;
     color: #f8fafc;
@@ -54,6 +60,7 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
     padding: 8px 12px;
     border-radius: 7px;
     transition: all 0.18s;
+    position: relative;
 }
 
 #adminNav .nav-link:hover {
@@ -65,6 +72,37 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
     color: #fff;
     font-weight: 600;
     background: rgba(37, 99, 235, 0.3);
+}
+
+/* Badge notifikasi */
+.notif-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    min-width: 17px;
+    height: 17px;
+    border-radius: 50px;
+    padding: 0 4px;
+    margin-left: 5px;
+    line-height: 1;
+    vertical-align: middle;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .btn-logout {
@@ -131,20 +169,37 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
 
         <div class="collapse navbar-collapse" id="adminNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'index.php'           ? 'active' : '' ?>"
-                        href="index.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'layanan.php'         ? 'active' : '' ?>"
-                        href="layanan.php">Layanan</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'galeri.php'          ? 'active' : '' ?>"
-                        href="galeri.php">Galeri</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'tim.php'             ? 'active' : '' ?>"
-                        href="tim.php">Tim</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'proyek.php'          ? 'active' : '' ?>"
-                        href="proyek.php">Pesanan</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'riwayat-pesanan.php' ? 'active' : '' ?>"
-                        href="riwayat-pesanan.php">Riwayat</a></li>
-                <li class="nav-item"><a class="nav-link <?= $halaman_aktif === 'ganti-password.php'  ? 'active' : '' ?>"
-                        href="ganti-password.php">Ganti Password</a></li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'index.php' ? 'active' : '' ?>"
+                        href="index.php">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'layanan.php' ? 'active' : '' ?>"
+                        href="layanan.php">Layanan</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'galeri.php' ? 'active' : '' ?>"
+                        href="galeri.php">Galeri</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'tim.php' ? 'active' : '' ?>" href="tim.php">Tim</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'proyek.php' ? 'active' : '' ?>" href="proyek.php">
+                        Pesanan
+                        <?php if ($jml_notif > 0): ?>
+                        <span class="notif-badge"><?= $jml_notif ?></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'riwayat-pesanan.php' ? 'active' : '' ?>"
+                        href="riwayat-pesanan.php">Riwayat</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $halaman_aktif === 'ganti-password.php' ? 'active' : '' ?>"
+                        href="ganti-password.php">Ganti Password</a>
+                </li>
             </ul>
             <a href="logout.php" class="btn-logout">Logout</a>
         </div>
