@@ -6,7 +6,7 @@
         <div class="carousel-inner">
 
             <div class="carousel-item active">
-                <img src="assets/img/hero/hero1.png" class="hero-carousel-img" alt="Kanopi Berkah Jaya">
+                <img src="assets/img/hero/hero1.jpeg" class="hero-carousel-img" alt="Kanopi Berkah Jaya">
                 <div class="hero-overlay"></div>
                 <div class="carousel-caption-custom">
                     <div class="container">
@@ -31,7 +31,7 @@
             </div>
 
             <div class="carousel-item">
-                <img src="assets/img/hero/hero2.png" class="hero-carousel-img" alt="Pagar Besi Berkah Jaya">
+                <img src="assets/img/hero/hero2.jpeg" class="hero-carousel-img" alt="Pagar Besi Berkah Jaya">
                 <div class="hero-overlay"></div>
                 <div class="carousel-caption-custom">
                     <div class="container">
@@ -56,22 +56,19 @@
             </div>
 
             <div class="carousel-item">
-                <img src="assets/img/hero/hero3.png" class="hero-carousel-img" alt="Proyek Berkah Jaya">
+                <img src="assets/img/hero/hero3.jpeg" class="hero-carousel-img" alt="Proyek Berkah Jaya">
                 <div class="hero-overlay"></div>
                 <div class="carousel-caption-custom">
                     <div class="container">
                         <div class="row align-items-center min-vh-hero">
                             <div class="col-lg-7">
                                 <span class="hero-badge">Bergaransi & Tepat Waktu</span>
-                                <h1 class="hero-title">Ratusan Proyek Selesai dengan Kepuasan Pelanggan</h1>
+                                <h1 class="hero-title">Banyak Proyek Selesai dengan Kepuasan Pelanggan</h1>
                                 <p class="hero-desc">Kami berkomitmen memberikan hasil terbaik dengan harga transparan
                                     dan tanpa biaya tersembunyi.</p>
                                 <div class="hero-buttons">
                                     <a href="pesan.php" class="btn-hero-primary">
                                         <i class="bi bi-calendar2-check"></i> Pesan & Survey Gratis
-                                    </a>
-                                    <a href="tim.php" class="btn-hero-secondary">
-                                        <i class="bi bi-people"></i> Kenali Tim Kami
                                     </a>
                                 </div>
                             </div>
@@ -79,10 +76,9 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- Kontrol bawah: panah kiri + indikator + panah kanan -->
+        <!-- panah kiri + indikator + panah kanan -->
         <div class="hero-bottom-controls">
             <button class="hero-arrow-btn" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
                 <i class="bi bi-chevron-left"></i>

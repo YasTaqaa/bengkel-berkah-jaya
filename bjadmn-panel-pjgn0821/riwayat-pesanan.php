@@ -1,23 +1,30 @@
 <?php
-require_once __DIR__ . "/../config.php";
+require_once __DIR__ . '/../config.php';
 if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     header("Location: login.php");
     exit;
 }
 
-$dari   = isset($_GET['dari'])   ? $_GET['dari']   : '';
-$sampai = isset($_GET['sampai']) ? $_GET['sampai'] : '';
+function linkify(string $text): string {
+    $text = htmlspecialchars($text);
+    $pattern = '/(https?:\/\/[^\s]+)/i';
+    return preg_replace_callback($pattern, function($m) {
+        return '<a href="'.$m[1].'" target="_blank" rel="noopener">Lihat Gambar</a>';
+    }, $text);
+}
 
-$where = "1=1";
+$dari   = isset($_GET['dari']) ? $_GET['dari'] : '';
+$sampai = isset($_GET['sampai']) ? $_GET['sampai'] : '';
+$where  = "1=1";
 if ($dari)   $where .= " AND DATE(p.tgl_pesan) >= '" . mysqli_real_escape_string($conn, $dari) . "'";
 if ($sampai) $where .= " AND DATE(p.tgl_pesan) <= '" . mysqli_real_escape_string($conn, $sampai) . "'";
 
-$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
-                             FROM proyek p
-                             LEFT JOIN layanan l ON p.layanan_id=l.id
-                             WHERE $where
-                             ORDER BY p.id DESC");
-
+$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
+FROM proyek p
+LEFT JOIN layanan l ON p.layanan_id=l.id
+LEFT JOIN galeri g ON p.galeri_id=g.id
+WHERE $where
+ORDER BY p.id DESC");
 $total_rows = mysqli_num_rows($list);
 ?>
 <!DOCTYPE html>
@@ -51,7 +58,6 @@ $total_rows = mysqli_num_rows($list);
         border-bottom: 1px solid #f1f5f9;
     }
 
-    /* Filter bar */
     .filter-bar {
         background: #fff;
         border-radius: 14px;
@@ -228,52 +234,37 @@ $total_rows = mysqli_num_rows($list);
 </head>
 
 <body>
-    <?php include "navbar-menu.php"; ?>
-
+    <?php include 'navbar-menu.php'; ?>
     <div class="container-fluid px-3 px-md-4 py-4">
-
-        <!-- Filter Bar -->
         <form method="GET" action="">
             <div class="filter-bar">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <label class="fw-semibold text-nowrap" style="font-size:0.83rem; color:#475569;">Filter
-                        Tanggal Pesan:</label>
-                    <input type="date" name="dari" class="form-control" style="max-width:160px;"
+                    <label class="fw-semibold text-nowrap" style="font-size:0.83rem; color:#475569">Filter Tanggal
+                        Pesan:</label>
+                    <input type="date" name="dari" class="form-control" style="max-width:160px"
                         value="<?php echo htmlspecialchars($dari); ?>" placeholder="Dari">
-                    <span class="text-muted" style="font-size:0.82rem;">s/d</span>
-                    <input type="date" name="sampai" class="form-control" style="max-width:160px;"
+                    <span class="text-muted" style="font-size:0.82rem">s/d</span>
+                    <input type="date" name="sampai" class="form-control" style="max-width:160px"
                         value="<?php echo htmlspecialchars($sampai); ?>" placeholder="Sampai">
-                    <button type="submit" class="btn-filter">
-                        <i class="bi bi-search me-1"></i> Filter
-                    </button>
-                    <?php if ($dari || $sampai): ?>
-                    <a href="riwayat-pesanan.php" class="btn-reset">
-                        <i class="bi bi-x me-1"></i> Reset
-                    </a>
-                    <?php endif; ?>
-                    <!-- Export -->
+                    <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i> Filter</button>
+                    <?php if ($dari || $sampai) { ?>
+                    <a href="riwayat-pesanan.php" class="btn-reset"><i class="bi bi-x me-1"></i> Reset</a>
+                    <?php } ?>
                     <a href="export-pesanan.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>"
-                        class="btn-export ms-auto">
-                        <i class="bi bi-file-earmark-excel"></i> Export Excel
-                    </a>
+                        class="btn-export ms-auto"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
                 </div>
-                <?php if ($dari || $sampai): ?>
-                <p class="result-count mt-2 mb-0">
-                    Menampilkan <strong><?php echo $total_rows; ?></strong> pesanan
-                    <?php if ($dari) echo ' dari <strong>' . htmlspecialchars($dari) . '</strong>'; ?>
-                    <?php if ($sampai) echo ' sampai <strong>' . htmlspecialchars($sampai) . '</strong>'; ?>
+                <?php if ($dari || $sampai) { ?>
+                <p class="result-count mt-2 mb-0">Menampilkan <strong><?php echo $total_rows; ?></strong> pesanan
+                    <?php if ($dari) echo "dari <strong>".htmlspecialchars($dari)."</strong>"; ?>
+                    <?php if ($sampai) echo " s/d <strong>".htmlspecialchars($sampai)."</strong>"; ?>
                 </p>
-                <?php endif; ?>
+                <?php } ?>
             </div>
         </form>
 
-        <!-- Tabel -->
         <div class="admin-card">
-            <div class="admin-card-header">
-                Riwayat Pesanan
-                <span class="fw-normal text-muted ms-2" style="font-size:0.8rem;">(<?php echo $total_rows; ?>
-                    data)</span>
-            </div>
+            <div class="admin-card-header">Riwayat Pesanan <span class="fw-normal text-muted ms-2"
+                    style="font-size:0.8rem"><?php echo $total_rows; ?> data</span></div>
             <div class="table-scroll">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -282,6 +273,8 @@ $total_rows = mysqli_num_rows($list);
                             <th>Nama</th>
                             <th>HP</th>
                             <th>Layanan</th>
+                            <th>Model</th>
+                            <th>Catatan</th>
                             <th>Ukuran</th>
                             <th>Harga</th>
                             <th>Status</th>
@@ -291,26 +284,31 @@ $total_rows = mysqli_num_rows($list);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                        if ($total_rows === 0) {
-                            echo '<tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data pesanan.</td></tr>';
-                        }
-                        $no = 1;
-                        while ($p = mysqli_fetch_assoc($list)) {
-                            $status = strtolower($p['status']);
-                            $badge = match($status) {
-                                'baru'    => 'badge-baru',
-                                'proses'  => 'badge-proses',
-                                'selesai' => 'badge-selesai',
-                                'batal'   => 'badge-batal',
-                                default   => 'badge-default'
-                            };
-                        ?>
+                        <?php if ($total_rows == 0) { ?>
+                        <tr>
+                            <td colspan="12" class="text-center text-muted py-4">Tidak ada data pesanan.</td>
+                        </tr>
+                        <?php } else {
+            $no = 1;
+            while ($p = mysqli_fetch_assoc($list)) {
+                $status = strtolower($p['status']);
+                $badge = match($status) {
+                    'baru' => 'badge-baru',
+                    'proses' => 'badge-proses',
+                    'selesai' => 'badge-selesai',
+                    'batal' => 'badge-batal',
+                    default => 'badge-default'
+                };
+          ?>
                         <tr>
                             <td class="text-muted"><?php echo $no++; ?></td>
                             <td><strong><?php echo htmlspecialchars($p['nama']); ?></strong></td>
                             <td><?php echo htmlspecialchars($p['hp']); ?></td>
                             <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
+                            <td class="text-muted">
+                                <?php echo $p['nama_model'] ? htmlspecialchars($p['nama_model']) : '-'; ?></td>
+                            <td style="max-width:180px; word-break:break-word;">
+                                <?php echo $p['catatan'] ? linkify($p['catatan']) : '-'; ?></td>
                             <td><?php echo htmlspecialchars($p['ukuran']) ?: '-'; ?></td>
                             <td>Rp <?php echo number_format($p['harga'],0,',','.'); ?></td>
                             <td><span
@@ -318,20 +316,15 @@ $total_rows = mysqli_num_rows($list);
                             </td>
                             <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
                             <td class="text-muted"><?php echo $p['tgl_selesai'] ?: '-'; ?></td>
-                            <td>
-                                <a href="nota.php?id=<?php echo $p['id']; ?>" class="btn-nota" target="_blank">
-                                    <i class="bi bi-printer me-1"></i>Nota
-                                </a>
-                            </td>
+                            <td><a href="nota.php?id=<?php echo $p['id']; ?>" class="btn-nota" target="_blank"><i
+                                        class="bi bi-printer me-1"></i>Nota</a></td>
                         </tr>
-                        <?php } ?>
+                        <?php } } ?>
                     </tbody>
                 </table>
             </div>
         </div>
-
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

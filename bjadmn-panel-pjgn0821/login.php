@@ -12,21 +12,19 @@ $error = "";
 if (!isset($_SESSION['login_attempts'])) $_SESSION['login_attempts'] = 0;
 if (!isset($_SESSION['login_lockout']))  $_SESSION['login_lockout']  = 0;
 
-$max_attempts  = 5;
-$lockout_time  = 15 * 60; // 15 menit dalam detik
-$sisa_waktu    = 0;
+$max_attempts = 5;
+$lockout_time = 15 * 60;
+$sisa_waktu   = 0;
 
-// Cek apakah sedang dalam masa lockout
 if ($_SESSION['login_lockout'] > 0) {
     $sisa_waktu = $_SESSION['login_lockout'] - time();
     if ($sisa_waktu <= 0) {
-        // Lockout sudah habis, reset
         $_SESSION['login_attempts'] = 0;
         $_SESSION['login_lockout']  = 0;
         $sisa_waktu = 0;
     } else {
-        $menit  = ceil($sisa_waktu / 60);
-        $error  = "Terlalu banyak percobaan gagal. Coba lagi dalam {$menit} menit.";
+        $menit = ceil($sisa_waktu / 60);
+        $error = "Terlalu banyak percobaan gagal. Coba lagi dalam {$menit} menit.";
     }
 }
 
@@ -38,13 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
     $res = mysqli_query($conn, $sql);
     if ($row = mysqli_fetch_assoc($res)) {
         if (password_verify($password, $row['password'])) {
-            // Login berhasil — reset counter
             $_SESSION['login_attempts'] = 0;
             $_SESSION['login_lockout']  = 0;
             $_SESSION['admin_login']    = true;
             $_SESSION['admin_user']     = $row['username'];
             $_SESSION['admin_id']       = $row['id'];
-            // Regenerate session ID untuk keamanan
             session_regenerate_id(true);
             header("Location: index.php");
             exit;
@@ -159,32 +155,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
         margin-bottom: 6px;
     }
 
-    .input-icon {
+    .input-wrap {
         position: relative;
     }
 
-    .input-icon i {
+    .input-wrap .input-icon-left {
         position: absolute;
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
         color: #94a3b8;
         font-size: 0.95rem;
+        pointer-events: none;
+        z-index: 2;
     }
 
-    .input-icon input {
+    .input-wrap input {
+        width: 100%;
         padding-left: 36px;
+        padding-right: 40px;
         border-radius: 9px;
         border: 1.5px solid #e2e8f0;
         font-size: 0.9rem;
         height: 44px;
         transition: border-color 0.2s, box-shadow 0.2s;
+        display: block;
     }
 
-    .input-icon input:focus {
+    .input-wrap input:focus {
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         outline: none;
+    }
+
+    .btn-toggle-pw {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 1rem;
+        line-height: 1;
+        z-index: 2;
+    }
+
+    .btn-toggle-pw:hover {
+        color: #475569;
     }
 
     .btn-login {
@@ -224,7 +244,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
 <body>
     <div class="login-wrap">
 
-        <!-- Brand -->
         <div class="login-brand">
             <div class="login-brand-icon">
                 <i class="bi bi-tools"></i>
@@ -233,7 +252,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
             <small>Panel Admin</small>
         </div>
 
-        <!-- Card Login -->
         <div class="login-card">
             <h4>Selamat Datang</h4>
             <p class="subtitle">Masuk ke panel admin untuk mengelola data bengkel.</p>
@@ -249,20 +267,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
             <form method="post" action="">
                 <div class="mb-3">
                     <label class="form-label">Username</label>
-                    <div class="input-icon">
-                        <i class="bi bi-person"></i>
+                    <div class="input-wrap">
+                        <i class="bi bi-person input-icon-left"></i>
                         <input type="text" name="username" class="form-control" placeholder="Masukkan username"
                             required>
                     </div>
                 </div>
+
                 <div class="mb-4">
                     <label class="form-label">Password</label>
-                    <div class="input-icon">
-                        <i class="bi bi-lock"></i>
-                        <input type="password" name="password" class="form-control" placeholder="Masukkan password"
-                            required>
+                    <div class="input-wrap">
+                        <i class="bi bi-lock input-icon-left"></i>
+                        <input type="password" name="password" id="inputPassword" class="form-control"
+                            placeholder="Masukkan password" required>
+                        <button type="button" class="btn-toggle-pw" onclick="togglePw()">
+                            <i class="bi bi-eye" id="pwEyeIcon"></i>
+                        </button>
                     </div>
                 </div>
+
                 <button type="submit" class="btn-login">
                     <i class="bi bi-box-arrow-in-right me-2"></i>Masuk
                 </button>
@@ -273,6 +296,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $sisa_waktu <= 0) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function togglePw() {
+        const input = document.getElementById('inputPassword');
+        const icon = document.getElementById('pwEyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'bi bi-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'bi bi-eye';
+        }
+    }
+    </script>
 </body>
 
 </html>

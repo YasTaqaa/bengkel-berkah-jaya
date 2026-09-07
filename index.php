@@ -29,7 +29,7 @@
                             <i class="bi bi-shield-check"></i>
                         </div>
                         <h5>Bahan Berkualitas</h5>
-                        <p>Menggunakan baja ringan dan besi pilihan untuk hasil kuat dan tahan lama.</p>
+                        <p>Menggunakan besi yang bagus untuk hasil kuat dan tahan lama.</p>
                     </div>
                 </div>
                 <div class="col-md-4 reveal">
@@ -91,39 +91,8 @@
         </div>
     </section>
 
-    <!-- TIM -->
-    <section class="py-5">
-        <div class="container">
-            <div class="text-center mb-5 reveal">
-                <span class="section-label">Orang-orang di Baliknya</span>
-                <h2 class="section-title mb-0">Tim Bengkel</h2>
-            </div>
-            <div class="row g-4">
-                <?php
-                $qTim = mysqli_query($conn, "SELECT * FROM karyawan ORDER BY urutan ASC LIMIT 3");
-                while ($t = mysqli_fetch_assoc($qTim)) {
-                ?>
-                <div class="col-md-4 reveal">
-                    <div class="card team-card h-100 text-center">
-                        <img src="assets/img/tim/<?php echo htmlspecialchars($t['foto']); ?>" class="card-img-top"
-                            style="height:250px;" alt="<?php echo htmlspecialchars($t['nama']); ?>">
-                        <div class="card-body">
-                            <h5 class="card-title"><?php echo htmlspecialchars($t['nama']); ?></h5>
-                            <p class="mb-1 text-muted"><?php echo htmlspecialchars($t['jabatan']); ?></p>
-                            <span class="badge-pengalaman">
-                                <i class="bi bi-star-fill me-1"></i><?php echo (int)$t['pengalaman']; ?> Tahun
-                                Pengalaman
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <?php } ?>
-            </div>
-        </div>
-    </section>
-
     <!-- GALERI -->
-    <section class="py-5 bg-light">
+    <section class="py-5">
         <div class="container">
             <div class="text-center mb-5 reveal">
                 <span class="section-label">Hasil Karya Kami</span>
@@ -190,10 +159,6 @@
                                 <span>+62 812‑3456‑7890</span>
                             </li>
                             <li>
-                                <span class="kontak-icon"><i class="bi bi-envelope-fill"></i></span>
-                                <span>bengkelberkahjaya@email.com</span>
-                            </li>
-                            <li>
                                 <span class="kontak-icon"><i class="bi bi-clock-fill"></i></span>
                                 <span>Senin – Sabtu, 08.00 – 16.00 WIB</span>
                             </li>
@@ -215,13 +180,6 @@
         </div>
     </section>
 
-    <!-- WA FLOATING -->
-    <div class="floating-wa">
-        <a href="https://wa.me/6281234567890" target="_blank" title="Chat WhatsApp">
-            <i class="bi bi-whatsapp"></i>
-        </a>
-    </div>
-
     <!-- FOOTER -->
     <footer>
         <div class="container">
@@ -229,10 +187,10 @@
                 <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                     <strong class="footer-brand">Berkah Jaya</strong>
                     <span class="footer-sep">·</span>
-                    <span>Bengkel Las & Kanopi, Kebumen</span>
+                    <span>Bengkel Las, Pejagoan, Kebumen</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya. All rights reserved.</small>
+                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya.</small>
                 </div>
             </div>
         </div>

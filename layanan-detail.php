@@ -95,20 +95,16 @@ $qGaleri = mysqli_query($conn, "SELECT * FROM galeri WHERE layanan_id=$id ORDER 
         </div>
     </section>
 
-    <div class="floating-wa">
-        <a href="https://wa.me/6281234567890" target="_blank"><i class="bi bi-whatsapp"></i></a>
-    </div>
-
     <footer>
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                     <strong class="footer-brand">Berkah Jaya</strong>
                     <span class="footer-sep">·</span>
-                    <span>Bengkel Las & Kanopi, Kebumen</span>
+                    <span>Bengkel Las, Pejagoan, Kebumen</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya. All rights reserved.</small>
+                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya.</small>
                 </div>
             </div>
         </div>

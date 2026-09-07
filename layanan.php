@@ -49,7 +49,7 @@
                                 <div class="d-flex gap-2">
                                     <a href="layanan-detail.php?id=<?php echo $lay['id']; ?>"
                                         class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-images me-1"></i>Galeri
+                                        <i class="bi bi-info-circle me-1"></i>Detail
                                     </a>
                                     <a href="pesan.php?layanan_id=<?php echo $lay['id']; ?>"
                                         class="btn btn-sm btn-primary">
@@ -76,20 +76,16 @@
         </div>
     </section>
 
-    <div class="floating-wa">
-        <a href="https://wa.me/6281234567890" target="_blank"><i class="bi bi-whatsapp"></i></a>
-    </div>
-
     <footer>
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                     <strong class="footer-brand">Berkah Jaya</strong>
                     <span class="footer-sep">·</span>
-                    <span>Bengkel Las & Kanopi, Kebumen</span>
+                    <span>Bengkel Las, Pejagoan, Kebumen</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya. All rights reserved.</small>
+                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya.</small>
                 </div>
             </div>
         </div>

@@ -24,7 +24,7 @@ $list = mysqli_query($conn, "SELECT * FROM layanan ORDER BY urutan ASC, id ASC")
 
 <head>
     <meta charset="UTF-8">
-    <title>Master Layanan - Admin</title>
+    <title>Data Layanan - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">

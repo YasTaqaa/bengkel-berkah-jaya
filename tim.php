@@ -35,8 +35,23 @@
                 ?>
                 <div class="col-md-4 reveal">
                     <div class="card team-card h-100 text-center">
+                        <?php if (!empty($t['foto']) && file_exists(__DIR__ . '/assets/img/tim/' . $t['foto'])): ?>
                         <img src="assets/img/tim/<?php echo htmlspecialchars($t['foto']); ?>" class="card-img-top"
-                            style="height:260px;" alt="<?php echo htmlspecialchars($t['nama']); ?>">
+                            style="height:260px; object-fit:cover; object-position:top;"
+                            alt="<?php echo htmlspecialchars($t['nama']); ?>">
+                        <?php else: ?>
+                        <div class="team-avatar-placeholder" style="height:260px;">
+                            <svg width="120" height="120" viewBox="0 0 120 120" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <!-- Lingkaran putih background -->
+                                <circle cx="60" cy="60" r="52" fill="white" opacity="0.6" />
+                                <!-- Kepala -->
+                                <circle cx="60" cy="45" r="18" fill="#94a3b8" />
+                                <!-- Badan -->
+                                <path d="M16 108 C16 82 36 68 60 68 C84 68 104 82 104 108" fill="#94a3b8" />
+                            </svg>
+                        </div>
+                        <?php endif; ?>
                         <div class="card-body">
                             <h5 class="card-title mb-1"><?php echo htmlspecialchars($t['nama']); ?></h5>
                             <p class="text-muted mb-3"><?php echo htmlspecialchars($t['jabatan']); ?></p>
@@ -62,10 +77,6 @@
             </a>
         </div>
     </section>
-
-    <div class="floating-wa">
-        <a href="https://wa.me/6281234567890" target="_blank"><i class="bi bi-whatsapp"></i></a>
-    </div>
 
     <footer>
         <div class="container">

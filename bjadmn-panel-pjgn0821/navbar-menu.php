@@ -182,9 +182,6 @@ $jml_notif = (int)$notif['jml'];
                         href="galeri.php">Galeri</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= $halaman_aktif === 'tim.php' ? 'active' : '' ?>" href="tim.php">Tim</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link <?= $halaman_aktif === 'proyek.php' ? 'active' : '' ?>" href="proyek.php">
                         Pesanan
                         <?php if ($jml_notif > 0): ?>

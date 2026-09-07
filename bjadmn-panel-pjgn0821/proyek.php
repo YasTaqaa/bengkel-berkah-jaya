@@ -1,14 +1,23 @@
 <?php
-require_once __DIR__ . "/../config.php";
+require_once __DIR__ . '/../config.php';
 if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     header("Location: login.php");
     exit;
 }
 
-$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
-                             FROM proyek p
-                             LEFT JOIN layanan l ON p.layanan_id=l.id
-                             ORDER BY p.status='baru' DESC, p.id DESC");
+function linkify(string $text): string {
+    $text = htmlspecialchars($text);
+    $pattern = '/(https?:\/\/[^\s]+)/i';
+    return preg_replace_callback($pattern, function($m) {
+        return '<a href="'.$m[1].'" target="_blank" rel="noopener">Lihat Gambar</a>';
+    }, $text);
+}
+
+$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
+FROM proyek p
+LEFT JOIN layanan l ON p.layanan_id=l.id
+LEFT JOIN galeri g ON p.galeri_id=g.id
+ORDER BY p.status='baru' DESC, p.id DESC");
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -82,7 +91,6 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
         font-size: 0.85rem;
     }
 
-    /* Input di dalam tabel */
     .table .form-control-sm {
         font-size: 0.82rem;
         border-radius: 6px;
@@ -95,7 +103,6 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
         box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
     }
 
-    /* Badge status */
     .badge-status {
         display: inline-block;
         padding: 3px 10px;
@@ -130,7 +137,6 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
         color: #64748b;
     }
 
-    /* Tombol aksi */
     .btn-simpan,
     .btn-aksi {
         font-size: 0.78rem;
@@ -247,15 +253,12 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
 </head>
 
 <body>
-    <?php include "navbar-menu.php"; ?>
-
+    <?php include 'navbar-menu.php'; ?>
     <div class="container-fluid px-3 px-md-4 py-4">
         <div class="admin-card">
             <div class="admin-card-header">
                 <span>Data Pesanan</span>
-                <a href="proses/tambah-proyek.php" class="btn-tambah">
-                    <i class="bi bi-plus-lg"></i> Tambah
-                </a>
+                <a href="proses/tambah-proyek.php" class="btn-tambah"><i class="bi bi-plus-lg"></i> Tambah</a>
             </div>
             <div class="table-scroll">
                 <table class="table table-hover mb-0">
@@ -265,6 +268,7 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                             <th>Nama</th>
                             <th>HP</th>
                             <th>Layanan</th>
+                            <th>Model</th>
                             <th>Lokasi</th>
                             <th>Catatan</th>
                             <th>Ukuran</th>
@@ -276,16 +280,18 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $no = 1; while ($p = mysqli_fetch_assoc($list)) {
-                            $status = strtolower($p['status']);
-                            $badge = match($status) {
-                                'baru'    => 'badge-baru',
-                                'proses'  => 'badge-proses',
-                                'selesai' => 'badge-selesai',
-                                'batal'   => 'badge-batal',
-                                default   => 'badge-default'
-                            };
-                        ?>
+                        <?php
+          $no = 1;
+          while ($p = mysqli_fetch_assoc($list)) {
+              $status = strtolower($p['status']);
+              $badge = match($status) {
+                  'baru' => 'badge-baru',
+                  'proses' => 'badge-proses',
+                  'selesai' => 'badge-selesai',
+                  'batal' => 'badge-batal',
+                  default => 'badge-default'
+              };
+          ?>
                         <tr>
                             <form method="post" action="proses/update-proyek.php">
                                 <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
@@ -293,49 +299,38 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                                 <td><strong><?php echo htmlspecialchars($p['nama']); ?></strong></td>
                                 <td><?php echo htmlspecialchars($p['hp']); ?></td>
                                 <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
+                                <td class="text-muted">
+                                    <?php echo $p['nama_model'] ? htmlspecialchars($p['nama_model']) : '-'; ?></td>
                                 <td class="cell-expand">
                                     <div class="cell-text" id="lok-<?php echo $p['id']; ?>">
-                                        <?php echo htmlspecialchars($p['lokasi']) ?: '-'; ?>
-                                    </div>
+                                        <?php echo htmlspecialchars($p['lokasi']); ?></div>
                                     <?php if (strlen($p['lokasi']) > 40) { ?>
                                     <button type="button" class="btn-expand"
-                                        onclick="toggleExpand('lok-<?php echo $p['id']; ?>', this)">
-                                        Lihat semua
-                                    </button>
+                                        onclick="toggleExpand('lok-<?php echo $p['id']; ?>', this)">Lihat semua</button>
                                     <?php } ?>
                                 </td>
                                 <td class="cell-expand">
                                     <div class="cell-text" id="cat-<?php echo $p['id']; ?>">
-                                        <?php echo htmlspecialchars($p['catatan']) ?: '-'; ?>
-                                    </div>
+                                        <?php echo linkify($p['catatan']); ?></div>
                                     <?php if (strlen($p['catatan']) > 40) { ?>
                                     <button type="button" class="btn-expand"
-                                        onclick="toggleExpand('cat-<?php echo $p['id']; ?>', this)">
-                                        Lihat semua
-                                    </button>
+                                        onclick="toggleExpand('cat-<?php echo $p['id']; ?>', this)">Lihat semua</button>
                                     <?php } ?>
                                 </td>
-                                <td>
-                                    <input type="text" name="ukuran"
+                                <td><input type="text" name="ukuran"
                                         value="<?php echo htmlspecialchars($p['ukuran']); ?>"
-                                        class="form-control form-control-sm" style="width:90px;">
-                                </td>
-                                <td>
-                                    <input type="number" name="harga" value="<?php echo (float)$p['harga']; ?>"
-                                        class="form-control form-control-sm" style="width:110px;">
-                                </td>
-                                <td>
-                                    <span class="badge-status <?php echo $badge; ?>">
-                                        <?php echo htmlspecialchars($p['status']); ?>
-                                    </span>
+                                        class="form-control form-control-sm" style="width:90px"></td>
+                                <td><input type="number" name="harga" value="<?php echo floatval($p['harga']); ?>"
+                                        class="form-control form-control-sm" style="width:110px"></td>
+                                <td><span
+                                        class="badge-status <?php echo $badge; ?>"><?php echo htmlspecialchars($p['status']); ?></span>
                                 </td>
                                 <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
                                 <td class="text-muted"><?php echo $p['tgl_selesai'] ?: '-'; ?></td>
                                 <td>
-                                    <div class="d-flex flex-column gap-1" style="width:80px;">
-                                        <button type="submit" class="btn-simpan">
-                                            <i class="bi bi-floppy me-1"></i>Simpan
-                                        </button>
+                                    <div class="d-flex flex-column gap-1" style="width:80px">
+                                        <button type="submit" class="btn-simpan"><i
+                                                class="bi bi-floppy me-1"></i>Simpan</button>
                                         <a href="proses/update-proyek.php?aksi=baru&id=<?php echo $p['id']; ?>"
                                             class="btn-aksi baru">Baru</a>
                                         <a href="proses/update-proyek.php?aksi=proses&id=<?php echo $p['id']; ?>"
@@ -356,7 +351,6 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     function toggleExpand(id, btn) {

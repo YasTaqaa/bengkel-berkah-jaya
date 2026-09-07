@@ -300,8 +300,7 @@ $riwayat = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
             <h5 class="fw-bold mb-1" style="color:#0f172a;">
                 Dashboard
             </h5>
-            <small class="text-muted">Halo, <strong><?php echo htmlspecialchars($_SESSION['admin_user']); ?></strong> —
-                <?php echo date('l, d F Y'); ?></small>
+
         </div>
 
         <!-- Stat Cards -->

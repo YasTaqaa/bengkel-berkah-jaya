@@ -39,9 +39,6 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
                         href="galeri.php">Galeri</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= $halaman_aktif === 'tim.php'     ? 'active' : '' ?>" href="tim.php">Tim</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link <?= $halaman_aktif === 'pesan.php'   ? 'active' : '' ?>"
                         href="pesan.php">Pesan</a>
                 </li>
@@ -49,7 +46,7 @@ $halaman_aktif = basename($_SERVER['PHP_SELF']);
 
             <!-- Divider + CTA WA -->
             <span class="nav-divider d-none d-lg-flex ms-2"></span>
-            <a href="https://wa.me/6281234567890" target="_blank" class="btn-nav-wa ms-lg-2">
+            <a href="https://wa.me/6288215604585" target="_blank" class="btn-nav-wa ms-lg-2">
                 <i class="bi bi-whatsapp"></i>
                 <span>Hubungi WA</span>
             </a>
