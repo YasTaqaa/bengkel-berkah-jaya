@@ -1,23 +1,26 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . "/../config.php";
+
 if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     header("Location: login.php");
     exit;
 }
 
 function linkify(string $text): string {
-    $text = htmlspecialchars($text);
-    $pattern = '/(https?:\/\/[^\s]+)/i';
-    return preg_replace_callback($pattern, function($m) {
-        return '<a href="'.$m[1].'" target="_blank" rel="noopener">Lihat Gambar</a>';
-    }, $text);
+    $textEscaped = htmlspecialchars($text);
+    return preg_replace_callback('/https?:\/\/\S+/i', function ($m) {
+        $url = htmlspecialchars($m[0], ENT_QUOTES);
+        return '<a href="javascript:void(0)" class="link-preview-gambar" data-img="' . $url . '">Lihat Gambar</a>';
+    }, $textEscaped);
 }
 
-$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
-FROM proyek p
-LEFT JOIN layanan l ON p.layanan_id=l.id
-LEFT JOIN galeri g ON p.galeri_id=g.id
-ORDER BY p.status='baru' DESC, p.id DESC");
+$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
+                                    g.judul AS nama_model,
+                                    g.harga AS harga_galeri
+                             FROM proyek p
+                             LEFT JOIN layanan l ON p.layanan_id = l.id
+                             LEFT JOIN galeri g ON p.galeri_id = g.id
+                             ORDER BY p.status='baru' DESC, p.id DESC");
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -45,7 +48,6 @@ ORDER BY p.status='baru' DESC, p.id DESC");
     .admin-card-header {
         padding: 14px 20px;
         font-weight: 700;
-        font-size: 0.9rem;
         color: #0f172a;
         border-bottom: 1px solid #f1f5f9;
         display: flex;
@@ -61,11 +63,9 @@ ORDER BY p.status='baru' DESC, p.id DESC");
         font-weight: 600;
         color: #fff;
         background: #16a34a;
-        border: none;
         padding: 6px 14px;
         border-radius: 7px;
         text-decoration: none;
-        transition: background 0.2s;
     }
 
     .btn-tambah:hover {
@@ -80,7 +80,6 @@ ORDER BY p.status='baru' DESC, p.id DESC");
         letter-spacing: 0.04em;
         color: #64748b;
         background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
         white-space: nowrap;
     }
 
@@ -92,15 +91,70 @@ ORDER BY p.status='baru' DESC, p.id DESC");
     }
 
     .table .form-control-sm {
-        font-size: 0.82rem;
-        border-radius: 6px;
         border: 1.5px solid #e2e8f0;
-        min-width: 90px;
+        border-radius: 7px;
+        font-size: 0.84rem;
+        height: 36px;
     }
 
-    .table .form-control-sm:focus {
+    .ukuran-input,
+    .harga-input {
+        box-sizing: border-box;
+        width: 135px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        margin: 0 !important;
+        padding: 8px 12px !important;
+        vertical-align: top;
+    }
+
+    .ukuran-input,
+    .harga-input {
+        display: block;
+    }
+
+    .harga-hint {
+        display: block;
+        height: 18px;
+        margin-top: 6px;
+        line-height: 18px;
+        font-size: 0.68rem;
+        color: #64748b;
+        white-space: nowrap;
+    }
+
+    .total-hint {
+        height: 20px;
+        margin-top: 2px;
+        line-height: 20px;
+        color: #047857;
+        font-size: 0.73rem;
+        font-weight: 700;
+    }
+
+    .ukuran-input:focus,
+    .harga-input:focus {
         border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .harga-hint {
+        display: block;
+        min-height: 17px;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 0.68rem;
+        line-height: 1.35;
+        white-space: nowrap;
+    }
+
+    .total-hint {
+        min-height: 18px;
+        margin-top: 3px;
+        color: #047857;
+        font-size: 0.73rem;
+        font-weight: 700;
+        white-space: nowrap;
     }
 
     .badge-status {
@@ -139,18 +193,16 @@ ORDER BY p.status='baru' DESC, p.id DESC");
 
     .btn-simpan,
     .btn-aksi {
-        font-size: 0.78rem;
-        font-weight: 600;
-        border: none;
-        padding: 5px 0;
-        border-radius: 6px;
-        cursor: pointer;
-        text-decoration: none;
-        white-space: nowrap;
         display: block;
         width: 80px;
+        padding: 5px 0;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
         text-align: center;
-        transition: background 0.2s;
+        text-decoration: none;
+        cursor: pointer;
     }
 
     .btn-simpan {
@@ -182,22 +234,6 @@ ORDER BY p.status='baru' DESC, p.id DESC");
         background: #fee2e2;
     }
 
-    .btn-aksi.baru:hover {
-        background: #e2e8f0;
-    }
-
-    .btn-aksi.proses:hover {
-        background: #ddd6fe;
-    }
-
-    .btn-aksi.selesai:hover {
-        background: #bbf7d0;
-    }
-
-    .btn-aksi.hapus:hover {
-        background: #fecaca;
-    }
-
     .table-scroll {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -222,18 +258,14 @@ ORDER BY p.status='baru' DESC, p.id DESC");
     }
 
     .btn-expand {
-        font-size: 0.7rem;
-        color: #2563eb;
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        margin-top: 3px;
         display: block;
-    }
-
-    .btn-expand:hover {
-        text-decoration: underline;
+        margin-top: 3px;
+        padding: 0;
+        border: none;
+        background: none;
+        color: #2563eb;
+        font-size: 0.7rem;
+        cursor: pointer;
     }
 
     .col-no {
@@ -241,25 +273,43 @@ ORDER BY p.status='baru' DESC, p.id DESC");
         text-align: center;
     }
 
+    .link-preview-gambar {
+        cursor: pointer;
+    }
+
     @media (max-width: 575.98px) {
 
         .table th,
         .table td {
             font-size: 0.78rem;
-            padding: 8px 8px;
+            padding: 8px;
+        }
+
+        .ukuran-input,
+        .harga-input {
+            width: 125px !important;
+        }
+
+        .harga-hint,
+        .total-hint {
+            white-space: normal;
         }
     }
     </style>
 </head>
 
 <body>
-    <?php include 'navbar-menu.php'; ?>
+    <?php include "navbar-menu.php"; ?>
+
     <div class="container-fluid px-3 px-md-4 py-4">
         <div class="admin-card">
             <div class="admin-card-header">
                 <span>Data Pesanan</span>
-                <a href="proses/tambah-proyek.php" class="btn-tambah"><i class="bi bi-plus-lg"></i> Tambah</a>
+                <a href="proses/tambah-proyek.php" class="btn-tambah">
+                    <i class="bi bi-plus-lg"></i> Tambah
+                </a>
             </div>
+
             <div class="table-scroll">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -272,7 +322,7 @@ ORDER BY p.status='baru' DESC, p.id DESC");
                             <th>Lokasi</th>
                             <th>Catatan</th>
                             <th>Ukuran</th>
-                            <th>Harga</th>
+                            <th>Harga / m²</th>
                             <th>Status</th>
                             <th>Tgl Pesan</th>
                             <th>Tgl Selesai</th>
@@ -281,29 +331,41 @@ ORDER BY p.status='baru' DESC, p.id DESC");
                     </thead>
                     <tbody>
                         <?php
-          $no = 1;
-          while ($p = mysqli_fetch_assoc($list)) {
-              $status = strtolower($p['status']);
-              $badge = match($status) {
-                  'baru' => 'badge-baru',
-                  'proses' => 'badge-proses',
-                  'selesai' => 'badge-selesai',
-                  'batal' => 'badge-batal',
-                  default => 'badge-default'
-              };
-          ?>
+                        $no = 1;
+                        while ($p = mysqli_fetch_assoc($list)) {
+                            $status = strtolower($p['status']);
+                            $badge = match ($status) {
+                                'baru' => 'badge-baru',
+                                'proses' => 'badge-proses',
+                                'selesai' => 'badge-selesai',
+                                'batal' => 'badge-batal',
+                                default => 'badge-default'
+                            };
+
+                            // Harga proyek yang sudah tersimpan dipertahankan.
+                            // Jika masih 0, isi otomatis hanya dari model galeri yang dipilih.
+                            $hargaTampil = '';
+                            if ((int)$p['harga'] > 0) {
+                                $hargaTampil = (int)$p['harga'];
+                            } elseif (!empty($p['galeri_id']) && $p['harga_galeri'] !== null && (int)$p['harga_galeri'] > 0) {
+                                $hargaTampil = (int)$p['harga_galeri'];
+                            }
+                        ?>
                         <tr>
                             <form method="post" action="proses/update-proyek.php">
                                 <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
+
                                 <td class="text-muted"><?php echo $no++; ?></td>
                                 <td><strong><?php echo htmlspecialchars($p['nama']); ?></strong></td>
                                 <td><?php echo htmlspecialchars($p['hp']); ?></td>
-                                <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
+                                <td><?php echo htmlspecialchars($p['nama_layanan'] ?? '-'); ?></td>
                                 <td class="text-muted">
-                                    <?php echo $p['nama_model'] ? htmlspecialchars($p['nama_model']) : '-'; ?></td>
+                                    <?php echo $p['nama_model'] ? htmlspecialchars($p['nama_model']) : '-'; ?>
+                                </td>
                                 <td class="cell-expand">
                                     <div class="cell-text" id="lok-<?php echo $p['id']; ?>">
-                                        <?php echo htmlspecialchars($p['lokasi']); ?></div>
+                                        <?php echo htmlspecialchars($p['lokasi']); ?>
+                                    </div>
                                     <?php if (strlen($p['lokasi']) > 40) { ?>
                                     <button type="button" class="btn-expand"
                                         onclick="toggleExpand('lok-<?php echo $p['id']; ?>', this)">Lihat semua</button>
@@ -311,26 +373,42 @@ ORDER BY p.status='baru' DESC, p.id DESC");
                                 </td>
                                 <td class="cell-expand">
                                     <div class="cell-text" id="cat-<?php echo $p['id']; ?>">
-                                        <?php echo linkify($p['catatan']); ?></div>
+                                        <?php echo linkify($p['catatan']); ?>
+                                    </div>
                                     <?php if (strlen($p['catatan']) > 40) { ?>
                                     <button type="button" class="btn-expand"
                                         onclick="toggleExpand('cat-<?php echo $p['id']; ?>', this)">Lihat semua</button>
                                     <?php } ?>
                                 </td>
-                                <td><input type="text" name="ukuran"
-                                        value="<?php echo htmlspecialchars($p['ukuran']); ?>"
-                                        class="form-control form-control-sm" style="width:90px"></td>
-                                <td><input type="number" name="harga" value="<?php echo floatval($p['harga']); ?>"
-                                        class="form-control form-control-sm" style="width:110px"></td>
-                                <td><span
-                                        class="badge-status <?php echo $badge; ?>"><?php echo htmlspecialchars($p['status']); ?></span>
+                                <td>
+                                    <input type="text" name="ukuran" class="form-control form-control-sm ukuran-input"
+                                        data-harga-input="harga-<?php echo $p['id']; ?>"
+                                        value="<?php echo htmlspecialchars($p['ukuran']); ?>" placeholder="3 x 1.5">
+                                    <small class="harga-hint">contoh: 3 x 1.5 m</small>
+                                    <small class="harga-hint">contoh: 3x1.5</small>
                                 </td>
-                                <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
-                                <td class="text-muted"><?php echo $p['tgl_selesai'] ?: '-'; ?></td>
+                                <td>
+                                    <input type="number" name="harga" id="harga-<?php echo $p['id']; ?>"
+                                        class="form-control form-control-sm harga-input"
+                                        value="<?php echo htmlspecialchars($hargaTampil); ?>" min="0"
+                                        placeholder="Isi harga">
+                                    <small class="harga-hint">otomatis jika model punya harga</small>
+                                    <small class="harga-hint total-hint" id="total-<?php echo $p['id']; ?>"></small>
+                                </td>
+                                <td>
+                                    <span class="badge-status <?php echo $badge; ?>">
+                                        <?php echo htmlspecialchars($p['status']); ?>
+                                    </span>
+                                </td>
+                                <td class="text-muted"><?php echo htmlspecialchars($p['tgl_pesan']); ?></td>
+                                <td class="text-muted">
+                                    <?php echo $p['tgl_selesai'] ? htmlspecialchars($p['tgl_selesai']) : '-'; ?>
+                                </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1" style="width:80px">
-                                        <button type="submit" class="btn-simpan"><i
-                                                class="bi bi-floppy me-1"></i>Simpan</button>
+                                        <button type="submit" class="btn-simpan">
+                                            <i class="bi bi-floppy me-1"></i>Simpan
+                                        </button>
                                         <a href="proses/update-proyek.php?aksi=baru&id=<?php echo $p['id']; ?>"
                                             class="btn-aksi baru">Baru</a>
                                         <a href="proses/update-proyek.php?aksi=proses&id=<?php echo $p['id']; ?>"
@@ -351,6 +429,21 @@ ORDER BY p.status='baru' DESC, p.id DESC");
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="previewGambarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background:transparent;border:none;box-shadow:none">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3"
+                        data-bs-dismiss="modal" aria-label="Close"
+                        style="background-color:rgba(0,0,0,.6);border-radius:50%;opacity:1;padding:10px;width:34px;height:34px"></button>
+                    <img id="previewGambarImg" src="" alt="Preview gambar"
+                        style="width:100%;max-height:80vh;object-fit:contain;border-radius:12px;background:#000">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     function toggleExpand(id, btn) {
@@ -358,6 +451,57 @@ ORDER BY p.status='baru' DESC, p.id DESC");
         const expanded = el.classList.toggle('expanded');
         btn.textContent = expanded ? 'Sembunyikan' : 'Lihat semua';
     }
+
+    function parseUkuran(value) {
+        const match = String(value).toLowerCase().replace(',', '.').match(
+            /^\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1]) * parseFloat(match[2]) : null;
+    }
+
+    function hitungTotal(inputUkuran) {
+        const luas = parseUkuran(inputUkuran.value);
+        const hargaInput = document.getElementById(inputUkuran.dataset.hargaInput);
+        const totalHint = document.getElementById('total-' + inputUkuran.dataset.hargaInput.replace('harga-', ''));
+        const harga = hargaInput ? parseFloat(hargaInput.value) || 0 : 0;
+
+        if (luas && harga > 0) {
+            totalHint.textContent = luas.toLocaleString('id-ID') + ' m² = Rp ' + (luas * harga).toLocaleString('id-ID');
+        } else {
+            totalHint.textContent = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.ukuran-input').forEach(function(input) {
+            input.addEventListener('input', function() {
+                hitungTotal(input);
+            });
+            hitungTotal(input);
+        });
+
+        document.querySelectorAll('.harga-input').forEach(function(input) {
+            input.addEventListener('input', function() {
+                const ukuran = document.querySelector('[data-harga-input="' + input.id + '"]');
+                if (ukuran) hitungTotal(ukuran);
+            });
+        });
+
+        const modalEl = document.getElementById('previewGambarModal');
+        const modalImg = document.getElementById('previewGambarImg');
+        if (modalEl && modalImg) {
+            const modal = new bootstrap.Modal(modalEl);
+            document.body.addEventListener('click', function(e) {
+                const trigger = e.target.closest('.link-preview-gambar');
+                if (!trigger) return;
+                e.preventDefault();
+                modalImg.src = trigger.getAttribute('data-img');
+                modal.show();
+            });
+            modalEl.addEventListener('hidden.bs.modal', function() {
+                modalImg.src = '';
+            });
+        }
+    });
     </script>
 </body>
 

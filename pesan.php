@@ -1,24 +1,54 @@
 <?php
-require_once __DIR__ . '/config.php';
-
+require_once __DIR__ . "/config.php";
 $qLayanan = mysqli_query($conn, "SELECT * FROM layanan ORDER BY urutan ASC");
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_db'])) {
     $nama       = input_filter($conn, $_POST['nama']);
     $hp         = input_filter($conn, $_POST['hp']);
     $layanan_id = (int)$_POST['layanan_id'];
     $galeri_id  = !empty($_POST['galeri_id']) ? (int)$_POST['galeri_id'] : null;
     $lokasi     = input_filter($conn, $_POST['lokasi']);
     $catatan    = input_filter($conn, $_POST['catatan']);
-
     $galeri_value = $galeri_id ? $galeri_id : "NULL";
 
     $sql = "INSERT INTO proyek (nama, hp, layanan_id, galeri_id, lokasi, ukuran, harga, catatan)
             VALUES ('$nama', '$hp', $layanan_id, $galeri_value, '$lokasi', '', 0, '$catatan')";
     mysqli_query($conn, $sql);
-
     header("Location: terima-kasih.php");
     exit;
+}
+
+// Data galeri untuk dirender jadi kartu pilihan model di JS main.js
+// Sekarang menyertakan kolom harga (khusus per model, boleh kosong)
+$qGaleriData = @mysqli_query($conn, "SELECT id, judul, foto, layanan_id, harga FROM galeri ORDER BY tgl_selesai DESC");
+$dataGaleri = [];
+if ($qGaleriData) {
+    while ($g = mysqli_fetch_assoc($qGaleriData)) {
+        $dataGaleri[] = $g;
+    }
+} else {
+    // Fallback kalau kolom harga di tabel galeri belum ditambahkan
+    $qGaleriData2 = mysqli_query($conn, "SELECT id, judul, foto, layanan_id FROM galeri ORDER BY tgl_selesai DESC");
+    while ($g = mysqli_fetch_assoc($qGaleriData2)) {
+        $g['harga'] = null;
+        $dataGaleri[] = $g;
+    }
+}
+
+// Data estimasi harga umum per layanan (dari tabel layanan_estimasi)
+$qEstimasiData = @mysqli_query($conn, "SELECT layanan_id, ukuran_model, estimasi_harga FROM layanan_estimasi ORDER BY layanan_id, urutan ASC");
+$dataEstimasi = [];
+if ($qEstimasiData) {
+    while ($e = mysqli_fetch_assoc($qEstimasiData)) {
+        $dataEstimasi[] = $e;
+    }
+}
+
+// Data harga dasar tiap layanan, untuk fallback terakhir
+$dataHargaLayanan = [];
+mysqli_data_seek($qLayanan, 0);
+while ($l = mysqli_fetch_assoc($qLayanan)) {
+    $dataHargaLayanan[$l['id']] = ['nama' => $l['nama'], 'harga' => $l['harga']];
 }
 ?>
 <!DOCTYPE html>
@@ -34,8 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
 </head>
 
 <body class="no-hero">
-    <?php include 'navbar.php'; ?>
-
+    <?php include "navbar.php"; ?>
     <div class="page-header">
         <div class="container">
             <div class="page-header-inner">
@@ -50,39 +79,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
     <section class="py-5">
         <div class="container">
             <div class="row justify-content-center">
-
                 <div class="col-md-7 reveal">
                     <div class="form-card">
                         <form method="post" action="">
-
                             <div class="mb-4">
-                                <label class="form-label fw-semibold"><i class="bi bi-person me-2 text-primary"></i>Nama
-                                    Lengkap</label>
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-person me-2 text-primary"></i>Nama Lengkap
+                                </label>
                                 <input type="text" name="nama" class="form-control form-control-lg"
                                     placeholder="Masukkan nama Anda" required>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-semibold"><i
-                                        class="bi bi-whatsapp me-2 text-primary"></i>No. WhatsApp</label>
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-whatsapp me-2 text-primary"></i>No. WhatsApp
+                                </label>
                                 <input type="text" name="hp" class="form-control form-control-lg"
                                     placeholder="Masukkan nomor WhatsApp Anda" required>
                             </div>
 
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold"><i
-                                        class="bi bi-grid me-2 text-primary"></i>Layanan yang Diinginkan</label>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-grid me-2 text-primary"></i>Layanan yang Diinginkan
+                                </label>
                                 <select name="layanan_id" id="layananSelect" class="form-select form-select-lg"
                                     required>
-                                    <option value=""> Pilih Layanan </option>
+                                    <option value="">- Pilih Layanan -</option>
                                     <?php
-                mysqli_data_seek($qLayanan, 0);
-                while ($lay = mysqli_fetch_assoc($qLayanan)) {
-                    $sel = (isset($_GET['layanan_id']) && $_GET['layanan_id'] == $lay['id']) ? 'selected' : '';
-                    echo "<option value='{$lay['id']}' $sel>".htmlspecialchars($lay['nama'])."</option>";
-                }
-                ?>
+                                    mysqli_data_seek($qLayanan, 0);
+                                    while ($lay = mysqli_fetch_assoc($qLayanan)) {
+                                        $sel = (isset($_GET['layanan_id']) && $_GET['layanan_id'] == $lay['id']) ? 'selected' : '';
+                                        echo "<option value='{$lay['id']}' $sel>" . htmlspecialchars($lay['nama']) . "</option>";
+                                    }
+                                    ?>
                                 </select>
+                            </div>
+
+                            <!-- Kotak estimasi harga UMUM per layanan -->
+                            <div class="estimasi-preview" id="estimasiPreview">
+                                <div class="estimasi-preview-title">
+                                    <i class="bi bi-cash-coin"></i> Kisaran Estimasi Harga
+                                </div>
+                                <div id="estimasiPreviewRows"></div>
+                                <p class="estimasi-preview-note">
+                                    <i class="bi bi-info-circle me-1"></i>Pilih model di bawah untuk estimasi yang
+                                    lebih presisi.
+                                </p>
                             </div>
 
                             <div class="mb-4">
@@ -90,34 +132,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
                                     <i class="bi bi-image me-2 text-primary"></i>Pilih Model dari Galeri Kami
                                     <span class="text-muted fw-normal">(opsional)</span>
                                 </label>
-                                <select name="galeri_id" id="galeriSelect" class="form-select form-select-lg" disabled>
-                                    <option value=""> Pilih layanan dahulu </option>
-                                </select>
-                                <small class="text-muted">Bisa dilewati jika ingin desain custom sesuai kebutuhan. Jika
-                                    memiliki referensi desain lain, silakan kirim link contoh pada kolom
-                                    catatan.</small>
+
+                                <!-- Input tersembunyi yang benar-benar dikirim ke server -->
+                                <input type="hidden" name="galeri_id" id="galeriIdInput" value="">
+
+                                <div id="galeriPilihanWrap" class="galeri-pilih-wrap">
+                                    <p class="text-muted small mb-0" id="galeriPilihanKosong">
+                                        Pilih layanan terlebih dahulu untuk melihat model yang tersedia.
+                                    </p>
+                                </div>
+
+                                <!-- Kotak estimasi harga PRESISI, muncul begitu kartu model diklik -->
+                                <div class="estimasi-model-box" id="estimasiModelBox">
+                                    <span class="label"><i class="bi bi-star-fill me-1"></i>Estimasi untuk model
+                                        ini</span>
+                                    <span class="nilai" id="estimasiModelNilai">-</span>
+                                </div>
+
+                                <small class="text-muted d-block mt-2">
+                                    Bisa dilewati jika ingin desain custom sesuai kebutuhan. Jika memiliki referensi
+                                    desain lain, silakan kirim link contoh pada kolom catatan.
+                                </small>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-semibold"><i
-                                        class="bi bi-geo-alt me-2 text-primary"></i>Lokasi / Alamat Lengkap</label>
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-geo-alt me-2 text-primary"></i>Lokasi/Alamat Lengkap
+                                </label>
                                 <textarea name="lokasi" class="form-control" rows="3"
                                     placeholder="Masukkan lokasi atau alamat lengkap Anda" required></textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-semibold"><i
-                                        class="bi bi-chat-text me-2 text-primary"></i>Catatan Tambahan <span
-                                        class="text-muted fw-normal">(opsional)</span></label>
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-chat-text me-2 text-primary"></i>Catatan Tambahan
+                                    <span class="text-muted fw-normal">(opsional)</span>
+                                </label>
                                 <textarea name="catatan" class="form-control" rows="3"
                                     placeholder="Tulis detail pesanan di sini, misalnya warna, ukuran, model, atau link contoh desain jika ada."></textarea>
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" name="simpandb" class="btn-submit"><i class="bi bi-send"></i>
-                                    Kirim</button>
+                                <button type="submit" name="simpan_db" class="btn-submit">
+                                    <i class="bi bi-send"></i> Kirim
+                                </button>
                             </div>
-
                         </form>
                     </div>
                 </div>
@@ -132,14 +191,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
                             <li><i class="bi bi-check-circle-fill"></i> Bergaransi</li>
                             <li><i class="bi bi-check-circle-fill"></i> Tim berpengalaman 10 tahun</li>
                         </ul>
-                        <div class="pesan-info-contact">
-                            <p class="mb-2"><i class="bi bi-whatsapp me-2"></i>+62 812-3456-7890</p>
-                            <p class="mb-2"><i class="bi bi-clock me-2"></i>Senin-Sabtu, 08.00-17.00</p>
-                            <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>Pejagoan, Kebumen</p>
-                        </div>
+                    </div>
+                    <div class="pesan-info-contact">
+                        <p class="mb-2"><i class="bi bi-whatsapp me-2"></i>+62 812-3456-7890</p>
+                        <p class="mb-2"><i class="bi bi-clock me-2"></i>Senin-Sabtu, 08.00-17.00</p>
+                        <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>Pejagoan, Kebumen</p>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
@@ -159,42 +217,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpandb'])) {
         </div>
     </footer>
 
+    <!-- Data galeri (dengan harga) dan estimasi dikirim ke main.js lewat variabel global -->
     <script>
-    const dataGaleri = <?php
-    $qGaleri = mysqli_query($conn, "SELECT id, judul, layanan_id FROM galeri ORDER BY tgl_selesai DESC");
-    $arr = [];
-    while ($g = mysqli_fetch_assoc($qGaleri)) { $arr[] = $g; }
-    echo json_encode($arr);
-?>;
-
-    const layananSelect = document.getElementById('layananSelect');
-    const galeriSelect = document.getElementById('galeriSelect');
-
-    function updateGaleriOptions() {
-        const layananId = layananSelect.value;
-        galeriSelect.innerHTML = '';
-
-        if (!layananId) {
-            galeriSelect.disabled = true;
-            galeriSelect.innerHTML = '<option value=""> Pilih layanan dahulu </option>';
-            return;
-        }
-
-        const filtered = dataGaleri.filter(g => g.layanan_id == layananId);
-        galeriSelect.disabled = false;
-        galeriSelect.innerHTML = '<option value=""> Tidak pilih model </option>';
-
-        if (filtered.length === 0) {
-            galeriSelect.innerHTML += '<option value="" disabled>Belum ada model untuk layanan ini</option>';
-        } else {
-            filtered.forEach(g => {
-                galeriSelect.innerHTML += `<option value="${g.id}">${g.judul}</option>`;
-            });
-        }
-    }
-
-    layananSelect.addEventListener('change', updateGaleriOptions);
-    window.addEventListener('DOMContentLoaded', updateGaleriOptions);
+    window.dataGaleriPesan = <?php echo json_encode($dataGaleri); ?>;
+    window.dataEstimasiPesan = <?php echo json_encode($dataEstimasi); ?>;
+    window.dataHargaLayananPesan = <?php echo json_encode($dataHargaLayanan); ?>;
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once __DIR__ . "/../../config.php";
-
 if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     header("Location: ../login.php");
     exit;
@@ -12,23 +11,23 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $judul       = input_filter($conn, $_POST['judul']);
-    $layanan_id  = $_POST['layanan_id'] !== '' ? (int)$_POST['layanan_id'] : null;
+    $layanan_id  = ($_POST['layanan_id'] != '') ? (int)$_POST['layanan_id'] : null;
     $keterangan  = input_filter($conn, $_POST['keterangan']);
     $tgl_selesai = input_filter($conn, $_POST['tgl_selesai']);
+    $harga       = !empty($_POST['harga']) ? (int)$_POST['harga'] : null;
 
-    // Upload foto
     require_once __DIR__ . "/upload-helper.php";
     $result = upload_foto($_FILES['foto'], __DIR__ . '/../../assets/img/galeri/');
 
     if ($result['error']) {
         $error = $result['error'];
     } elseif (empty($result['file'])) {
-        $error = 'Foto wajib diupload.';
+        $error = "Foto wajib diupload.";
     } else {
         $foto = $result['file'];
 
-        $stmt = $conn->prepare("INSERT INTO galeri (judul, layanan_id, keterangan, tgl_selesai, foto) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("sisss", $judul, $layanan_id, $keterangan, $tgl_selesai, $foto);
+        $stmt = $conn->prepare("INSERT INTO galeri (judul, layanan_id, keterangan, tgl_selesai, foto, harga) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sisssi", $judul, $layanan_id, $keterangan, $tgl_selesai, $foto, $harga);
         $stmt->execute();
 
         header("Location: ../galeri.php");
@@ -91,6 +90,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
+    .harga-hint {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.76rem;
+        color: #0369a1;
+        margin-top: 6px;
+        line-height: 1.5;
+    }
+
+    .harga-hint code {
+        background: #e0f2fe;
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: #0c4a6e;
+    }
+
     .btn-simpan {
         background: #2563eb;
         color: #fff;
@@ -128,24 +145,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <?php include "../navbar-menu.php"; ?>
-
     <div class="container-fluid px-3 px-md-4 py-4 d-flex flex-column align-items-center">
 
-        <?php if ($error): ?>
+        <?php if ($error) { ?>
         <div class="alert alert-danger d-flex align-items-center gap-2 mb-3"
-            style="max-width:560px; width:100%; font-size:0.85rem; border-radius:8px;">
-            <i class="bi bi-exclamation-circle-fill"></i>
-            <?php echo htmlspecialchars($error); ?>
+            style="max-width:560px; width:100%; font-size:0.85rem; border-radius:8px">
+            <i class="bi bi-exclamation-circle-fill"></i> <?php echo htmlspecialchars($error); ?>
         </div>
-        <?php endif; ?>
+        <?php } ?>
 
         <div class="form-card">
-            <div class="form-card-title">
-                <i class="bi bi-plus-circle me-2 text-primary"></i>Tambah Galeri
-            </div>
-
+            <div class="form-card-title"><i class="bi bi-plus-circle me-2 text-primary"></i>Tambah Galeri</div>
             <form method="post" enctype="multipart/form-data">
-
                 <div class="mb-3">
                     <label class="form-label">Judul</label>
                     <input type="text" name="judul" class="form-control"
@@ -160,10 +171,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mysqli_data_seek($qLayanan, 0);
                         while ($l = mysqli_fetch_assoc($qLayanan)) {
                             $sel = (isset($_POST['layanan_id']) && $_POST['layanan_id'] == $l['id']) ? 'selected' : '';
-                            echo '<option value="'.$l['id'].'" '.$sel.'>'.htmlspecialchars($l['nama']).'</option>';
+                            echo "<option value='" . $l['id'] . "' " . $sel . ">" . htmlspecialchars($l['nama']) . "</option>";
                         }
                         ?>
                     </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Harga Khusus untuk Model Ini (Rp / m&sup2;)</label>
+                    <input type="number" name="harga" class="form-control" min="0"
+                        value="<?php echo htmlspecialchars($_POST['harga'] ?? ''); ?>">
+                    <div class="harga-hint">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Opsional. Isi angka saja, contoh <code>450000</code>. Kosongkan jika harga model ini sama
+                        dengan harga dasar layanan yang dipilih di atas.
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -186,17 +208,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn-simpan">
-                        <i class="bi bi-floppy me-1"></i> Simpan
-                    </button>
+                    <button type="submit" class="btn-simpan"><i class="bi bi-floppy me-1"></i> Simpan</button>
                     <a href="../galeri.php" class="btn-batal">Batal</a>
                 </div>
-
             </form>
         </div>
-
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

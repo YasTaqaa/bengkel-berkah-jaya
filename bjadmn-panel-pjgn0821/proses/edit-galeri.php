@@ -7,8 +7,8 @@ if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     exit;
 }
 
-$id    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$data  = [];
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$data = null;
 $error = '';
 
 if ($id > 0) {
@@ -16,7 +16,10 @@ if ($id > 0) {
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $data = $stmt->get_result()->fetch_assoc();
-    if (!$data) $error = "Data galeri tidak ditemukan.";
+
+    if (!$data) {
+        $error = "Data galeri tidak ditemukan.";
+    }
 } else {
     $error = "ID galeri tidak valid.";
 }
@@ -25,29 +28,30 @@ $qLayanan = mysqli_query($conn, "SELECT id, nama FROM layanan ORDER BY urutan AS
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     $judul       = input_filter($conn, $_POST['judul']);
-    $layanan_id  = $_POST['layanan_id'] !== '' ? (int)$_POST['layanan_id'] : null;
+    $layanan_id  = ($_POST['layanan_id'] != '') ? (int)$_POST['layanan_id'] : null;
     $keterangan  = input_filter($conn, $_POST['keterangan']);
     $tgl_selesai = input_filter($conn, $_POST['tgl_selesai']);
+    $harga       = !empty($_POST['harga']) ? (int)$_POST['harga'] : null;
     $nama_file   = $data['foto'];
 
-    // Upload foto baru jika ada
     if (!empty($_FILES['foto']['name'])) {
         require_once __DIR__ . "/upload-helper.php";
         $result = upload_foto($_FILES['foto'], __DIR__ . '/../../assets/img/galeri/');
+
         if ($result['error']) {
             $error = $result['error'];
         } else {
-            // Hapus foto lama
             if ($data['foto'] && file_exists(__DIR__ . '/../../assets/img/galeri/' . $data['foto'])) {
                 unlink(__DIR__ . '/../../assets/img/galeri/' . $data['foto']);
             }
+
             $nama_file = $result['file'];
         }
     }
 
     if (empty($error)) {
-        $stmt = $conn->prepare("UPDATE galeri SET judul=?, layanan_id=?, keterangan=?, tgl_selesai=?, foto=? WHERE id=?");
-        $stmt->bind_param("sisssi", $judul, $layanan_id, $keterangan, $tgl_selesai, $nama_file, $id);
+        $stmt = $conn->prepare("UPDATE galeri SET judul=?, layanan_id=?, keterangan=?, tgl_selesai=?, foto=?, harga=? WHERE id=?");
+        $stmt->bind_param("sisssii", $judul, $layanan_id, $keterangan, $tgl_selesai, $nama_file, $harga, $id);
         $stmt->execute();
 
         header("Location: ../galeri.php");
@@ -60,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 
 <head>
     <meta charset="UTF-8">
-    <title>Edit Galeri - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Galeri - Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
@@ -120,6 +124,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         display: block;
     }
 
+    .harga-hint {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.76rem;
+        color: #0369a1;
+        margin-top: 6px;
+        line-height: 1.5;
+    }
+
+    .harga-hint code {
+        background: #e0f2fe;
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: #0c4a6e;
+    }
+
     .btn-simpan {
         background: #2563eb;
         color: #fff;
@@ -159,23 +181,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     <?php include "../navbar-menu.php"; ?>
 
     <div class="container-fluid px-3 px-md-4 py-4 d-flex flex-column align-items-center">
-
-        <?php if ($error): ?>
+        <?php if ($error) { ?>
         <div class="alert alert-danger d-flex align-items-center gap-2 mb-3"
-            style="max-width:560px; width:100%; font-size:0.85rem; border-radius:8px;">
+            style="max-width:560px; width:100%; font-size:0.85rem; border-radius:8px">
             <i class="bi bi-exclamation-circle-fill"></i>
             <?php echo htmlspecialchars($error); ?>
         </div>
-        <?php endif; ?>
+        <?php } ?>
 
-        <?php if (!empty($data)): ?>
+        <?php if ($data) { ?>
         <div class="form-card">
             <div class="form-card-title">
                 <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Galeri
             </div>
 
             <form method="post" enctype="multipart/form-data">
-
                 <div class="mb-3">
                     <label class="form-label">Judul</label>
                     <input type="text" name="judul" class="form-control"
@@ -190,10 +210,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
                         mysqli_data_seek($qLayanan, 0);
                         while ($l = mysqli_fetch_assoc($qLayanan)) {
                             $sel = ($data['layanan_id'] == $l['id']) ? 'selected' : '';
-                            echo '<option value="'.$l['id'].'" '.$sel.'>'.htmlspecialchars($l['nama']).'</option>';
+                            echo "<option value='" . $l['id'] . "' " . $sel . ">" . htmlspecialchars($l['nama']) . "</option>";
                         }
                         ?>
                     </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Harga Khusus untuk Model Ini (Rp / m&sup2;)</label>
+                    <input type="number" name="harga" class="form-control" min="0"
+                        value="<?php echo htmlspecialchars($data['harga'] ?? ''); ?>">
+                    <div class="harga-hint">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Opsional. Isi angka saja, contoh <code>450000</code>. Kosongkan jika harga model ini sama
+                        dengan harga dasar layanan yang dipilih di atas.
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -210,10 +241,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 
                 <div class="mb-4">
                     <label class="form-label">Foto</label>
-                    <?php if ($data['foto']): ?>
-                    <img src="<?php echo '../../assets/img/galeri/' . htmlspecialchars($data['foto']); ?>"
+                    <?php if ($data['foto']) { ?>
+                    <img src="../../assets/img/galeri/<?php echo htmlspecialchars($data['foto']); ?>"
                         class="foto-preview" alt="Foto saat ini">
-                    <?php endif; ?>
+                    <?php } ?>
                     <input type="file" name="foto" class="form-control" accept="image/jpeg,image/png,image/webp">
                     <small class="text-muted">Kosongkan jika tidak mengganti foto. JPG, PNG, WebP. Maks 3MB.</small>
                 </div>
@@ -224,11 +255,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
                     </button>
                     <a href="../galeri.php" class="btn-batal">Batal</a>
                 </div>
-
             </form>
         </div>
-        <?php endif; ?>
-
+        <?php } ?>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

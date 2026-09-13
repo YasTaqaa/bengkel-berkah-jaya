@@ -504,6 +504,13 @@ GALERI CLICK PREVIEW
   opacity: 1;
 }
 
+.service-card:hover .galeri-img-wrap img {
+  transform: scale(1.06);
+}
+.service-card:hover .galeri-overlay {
+  opacity: 1;
+}
+
 .galeri-no-image {
   width: 100%;
   height: 100%;
@@ -633,6 +640,112 @@ GALERI CLICK PREVIEW
   margin-bottom: 24px;
 }
 
+.detail-harga-satuan {
+font-size: 0.8rem;
+font-weight: 600;
+color: #64748b;
+margin-left: 4px;
+}
+
+.detail-spek-list {
+list-style: none;
+padding: 0;
+margin: 0 0 18px 0;
+}
+
+.detail-spek-list li {
+display: flex;
+align-items: flex-start;
+gap: 10px;
+margin-bottom: 10px;
+font-size: 0.92rem;
+color: #334155;
+line-height: 1.5;
+}
+
+.detail-spek-list li i {
+color: #16a34a;
+font-size: 1rem;
+margin-top: 2px;
+flex-shrink: 0;
+}
+
+.detail-note {
+display: flex;
+align-items: flex-start;
+gap: 8px;
+background: #fffbeb;
+border: 1px solid #fde68a;
+color: #92400e;
+font-size: 0.85rem;
+line-height: 1.6;
+padding: 12px 14px;
+border-radius: 10px;
+margin-bottom: 6px;
+}
+
+.detail-note i {
+margin-top: 2px;
+flex-shrink: 0;
+}
+
+/* ===========================
+ESTIMASI HARGA TABLE
+=========================== */
+.estimasi-card {
+background: #fff;
+border: 1px solid #e2e8f0;
+border-radius: 16px;
+padding: 8px;
+box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.estimasi-table {
+font-size: 0.9rem;
+margin-bottom: 0;
+}
+
+.estimasi-table thead th {
+background: #f8fafc;
+color: #475569;
+font-weight: 700;
+font-size: 0.78rem;
+text-transform: uppercase;
+letter-spacing: 0.04em;
+border-bottom: 2px solid #e2e8f0;
+padding: 14px 16px;
+white-space: nowrap;
+}
+
+.estimasi-table tbody td {
+padding: 14px 16px;
+vertical-align: middle;
+color: #334155;
+border-bottom: 1px solid #f1f5f9;
+}
+
+.estimasi-table tbody tr:last-child td {
+border-bottom: none;
+}
+
+.estimasi-footnote {
+font-size: 0.8rem;
+color: #64748b;
+padding: 14px 16px 8px;
+margin-bottom: 0;
+line-height: 1.6;
+}
+
+@media (max-width: 767.98px) {
+.estimasi-table {
+font-size: 0.82rem;
+}
+.estimasi-table thead th,
+.estimasi-table tbody td {
+padding: 10px 12px;
+}
+}
+
 /* ===========================
    FORM PESAN
 =========================== */
@@ -725,6 +838,122 @@ GALERI CLICK PREVIEW
 }
 
 /* ===========================
+GALERI PILIH MODEL (kartu gambar di form pesan)
+=========================== */
+.galeri-pilih-wrap {
+margin-top: 10px;
+}
+
+.galeri-pilih-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+gap: 12px;
+}
+
+.galeri-pilih-card {
+position: relative;
+display: flex;
+flex-direction: column;
+border: 2px solid #e2e8f0;
+border-radius: 10px;
+overflow: hidden;
+cursor: pointer;
+background: #fff;
+transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.galeri-pilih-card:hover {
+border-color: #93c5fd;
+transform: translateY(-2px);
+box-shadow: 0 4px 14px rgba(13,110,253,0.12);
+}
+
+.galeri-pilih-card input[type="radio"] {
+position: absolute;
+opacity: 0;
+pointer-events: none;
+}
+
+.galeri-pilih-card img {
+width: 100%;
+height: 90px;
+object-fit: cover;
+display: block;
+background: #e2e8f0;
+}
+
+.galeri-pilih-title {
+font-size: 0.78rem;
+font-weight: 600;
+color: #334155;
+padding: 6px 8px;
+text-align: center;
+line-height: 1.3;
+}
+
+.galeri-pilih-card.active {
+border-color: #0d6efd;
+box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+}
+
+.galeri-pilih-card.active::after {
+content: "\F633";
+font-family: "bootstrap-icons";
+position: absolute;
+top: 6px;
+right: 6px;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: #0d6efd;
+color: #fff;
+font-size: 0.75rem;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.galeri-pilih-none {
+justify-content: center;
+align-items: center;
+min-height: 116px;
+}
+
+.galeri-pilih-none-inner {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+padding: 12px 8px;
+color: #64748b;
+font-size: 0.78rem;
+font-weight: 600;
+text-align: center;
+}
+
+.galeri-pilih-none-inner i {
+font-size: 1.3rem;
+}
+
+.galeri-pilih-none.active {
+border-color: #0d6efd;
+box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+}
+
+.galeri-pilih-none.active .galeri-pilih-none-inner {
+color: #0d6efd;
+}
+
+@media (max-width: 575.98px) {
+.galeri-pilih-grid {
+grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+.galeri-pilih-card img {
+height: 76px;
+}
+}
+
+/* ===========================
    TERIMA KASIH
 =========================== */
 .thankyou-section {
@@ -773,3 +1002,111 @@ GALERI CLICK PREVIEW
   overflow: hidden;
 }
 
+/* =========================================================
+   ESTIMASI HARGA - HALAMAN PESAN
+   Tempelkan seluruh blok ini DI BAGIAN PALING BAWAH
+   file assets/css/style.css
+   ========================================================= */
+
+/* Kotak biru: estimasi umum setelah layanan dipilih */
+.estimasi-preview {
+    display: none;
+    margin-top: 10px;
+    margin-bottom: 22px;
+    padding: 14px 16px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+}
+
+.estimasi-preview.show {
+    display: block;
+}
+
+.estimasi-preview-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: #1e40af;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.estimasi-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+    color: #1e3a8a;
+    font-size: 0.83rem;
+    border-bottom: 1px dashed #bfdbfe;
+}
+
+.estimasi-preview-row:last-child {
+    border-bottom: none;
+}
+
+.estimasi-preview-row .harga {
+    flex-shrink: 0;
+    font-weight: 700;
+    text-align: right;
+}
+
+.estimasi-preview-note {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 0.74rem;
+    line-height: 1.5;
+}
+
+/* Kotak hijau: harga khusus foto/model galeri yang dipilih */
+.estimasi-model-box {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    border-radius: 10px;
+}
+
+.estimasi-model-box.show {
+    display: flex;
+}
+
+.estimasi-model-box .label {
+    color: #065f46;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.estimasi-model-box .nilai {
+    color: #047857;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-align: right;
+}
+
+@media (max-width: 575.98px) {
+    .estimasi-preview-row {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .estimasi-preview-row .harga {
+        text-align: left;
+    }
+
+    .estimasi-model-box {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .estimasi-model-box .nilai {
+        text-align: left;
+    }
+}

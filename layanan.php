@@ -35,17 +35,30 @@
                 ?>
                 <div class="col-md-4 reveal">
                     <div class="card service-card h-100">
-                        <img src="assets/img/layanan/<?php echo htmlspecialchars($lay['foto']); ?>" class="card-img-top"
-                            style="height:210px;" alt="<?php echo htmlspecialchars($lay['nama']); ?>">
+
+                        <!-- Wrapper gambar: klik untuk buka modal preview -->
+                        <div class="galeri-img-wrap" style="height:210px" data-bs-toggle="modal"
+                            data-bs-target="#layananModal"
+                            data-img="assets/img/layanan/<?php echo htmlspecialchars($lay['foto']); ?>"
+                            data-title="<?php echo htmlspecialchars($lay['nama']); ?>"
+                            data-desc="<?php echo htmlspecialchars($lay['deskripsi']); ?>">
+                            <img src="assets/img/layanan/<?php echo htmlspecialchars($lay['foto']); ?>"
+                                class="card-img-top" style="height:210px; object-fit:cover; width:100%"
+                                alt="<?php echo htmlspecialchars($lay['nama']); ?>"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="galeri-no-image" style="display:none">Gambar tidak tersedia</div>
+                            <div class="galeri-overlay"><i class="bi bi-zoom-in"></i></div>
+                        </div>
+
                         <div class="card-body">
                             <h5 class="card-title"><?php echo htmlspecialchars($lay['nama']); ?></h5>
-                            <p class="card-text text-muted"><?php echo nl2br(htmlspecialchars($lay['deskripsi'])); ?>
-                            </p>
+                            <p class="card-text text-muted">
+                                <?php echo nl2br(htmlspecialchars($lay['deskripsi'])); ?></p>
                         </div>
                         <div class="card-footer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <strong class="text-primary">Mulai Rp
-                                    <?php echo number_format($lay['harga'],0,',','.'); ?></strong>
+                                    <?php echo number_format($lay['harga'], 0, ',', '.'); ?></strong>
                                 <div class="d-flex gap-2">
                                     <a href="layanan-detail.php?id=<?php echo $lay['id']; ?>"
                                         class="btn btn-sm btn-outline-secondary">
@@ -81,15 +94,32 @@
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                     <strong class="footer-brand">Berkah Jaya</strong>
-                    <span class="footer-sep">·</span>
+                    <span class="footer-sep"></span>
                     <span>Bengkel Las, Pejagoan, Kebumen</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya.</small>
+                    <small>&copy; <?php echo date("Y"); ?> Bengkel Las Berkah Jaya.</small>
                 </div>
             </div>
         </div>
     </footer>
+
+    <!-- Modal Preview Layanan -->
+    <div class="modal fade modal-galeri" id="layananModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+                    <img id="modalLayananImg" src="" alt="" class="modal-preview-img">
+                    <div class="modal-caption px-3 pb-2">
+                        <h5 id="modalLayananTitle"></h5>
+                        <p id="modalLayananDesc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/main.js"></script>
