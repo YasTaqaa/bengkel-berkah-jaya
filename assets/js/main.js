@@ -93,39 +93,8 @@ bootstrap.Alert.getOrCreateInstance(alert).close();
 // ===========================
 // Modal Preview Galeri
 // ===========================
-const galeriModal = document.getElementById('galeriModal');
-const modalImg = document.getElementById('modalGaleriImg');
-const modalTitle = document.getElementById('modalGaleriTitle');
-const modalDesc = document.getElementById('modalGaleriDesc');
+// Modal Preview Galeri: carousel foto di dalam modal
 
-if (galeriModal && modalImg && modalTitle && modalDesc) {
-galeriModal.addEventListener('show.bs.modal', function (event) {
-const trigger = event.relatedTarget;
-if (!trigger) return;
-
-const img = trigger.getAttribute('data-img') || '';
-const title = trigger.getAttribute('data-title') || 'Preview gambar';
-const desc = trigger.getAttribute('data-desc') || '';
-
-modalImg.src = img;
-modalImg.alt = title;
-modalTitle.textContent = title;
-modalDesc.innerHTML = desc ? desc.replace(/\n/g, '') : 'Tidak ada deskripsi.';
-});
-
-modalImg.addEventListener('error', function () {
-modalImg.src = '';
-modalTitle.textContent = 'Gambar tidak tersedia';
-modalDesc.textContent = 'File gambar tidak ditemukan.';
-});
-
-galeriModal.addEventListener('hidden.bs.modal', function () {
-modalImg.src = '';
-modalImg.alt = '';
-modalTitle.textContent = '';
-modalDesc.textContent = '';
-});
-}
 
 // ===========================
 // Modal Preview Layanan
@@ -314,3 +283,116 @@ window.addEventListener('scroll', function () {
 const nav = document.getElementById('mainNav');
 if (nav) nav.classList.toggle('nav-scrolled', window.scrollY > 15);
 });
+
+(function () {
+    function initGaleriThumbnailModal() {
+        const modal = document.getElementById('galeriModal');
+        const modalImg = document.getElementById('modalGaleriImg');
+        const thumbnailList = document.getElementById('modalThumbnailList');
+        const modalTitle = document.getElementById('modalGaleriTitle');
+        const modalDesc = document.getElementById('modalGaleriDesc');
+
+        if (!modal || !modalImg || !thumbnailList) {
+            return;
+        }
+
+        modal.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+
+            if (!trigger) {
+                return;
+            }
+
+            let fotoList = [];
+
+            try {
+                fotoList = JSON.parse(
+                    trigger.getAttribute('data-foto-list') || '[]'
+                );
+            } catch (error) {
+                console.error('Data foto tidak valid:', error);
+            }
+
+            thumbnailList.innerHTML = '';
+
+            if (modalTitle) {
+                modalTitle.textContent =
+                    trigger.getAttribute('data-title') || '';
+            }
+
+            if (modalDesc) {
+                modalDesc.textContent =
+                    trigger.getAttribute('data-desc') || '';
+            }
+
+            if (fotoList.length === 0) {
+                modalImg.removeAttribute('src');
+                modalImg.alt = 'Gambar tidak tersedia';
+                return;
+            }
+
+            modalImg.src = fotoList[0];
+            modalImg.alt = modalTitle
+                ? modalTitle.textContent
+                : 'Preview gambar';
+
+            fotoList.forEach(function (foto, index) {
+                const thumbnailButton = document.createElement('button');
+
+                thumbnailButton.type = 'button';
+                thumbnailButton.className =
+                    'modal-thumbnail' + (index === 0 ? ' active' : '');
+
+                thumbnailButton.setAttribute(
+                    'aria-label',
+                    'Tampilkan foto ' + (index + 1)
+                );
+
+                const thumbnailImage = document.createElement('img');
+                thumbnailImage.src = foto;
+                thumbnailImage.alt = 'Foto ' + (index + 1);
+
+                thumbnailButton.appendChild(thumbnailImage);
+                thumbnailList.appendChild(thumbnailButton);
+
+                thumbnailButton.addEventListener('click', function (clickEvent) {
+                    clickEvent.preventDefault();
+                    clickEvent.stopPropagation();
+
+                    modalImg.src = foto;
+
+                    thumbnailList
+                        .querySelectorAll('.modal-thumbnail')
+                        .forEach(function (button) {
+                            button.classList.remove('active');
+                        });
+
+                    thumbnailButton.classList.add('active');
+                });
+            });
+        });
+
+        modal.addEventListener('hidden.bs.modal', function () {
+            modalImg.removeAttribute('src');
+            modalImg.alt = '';
+            thumbnailList.innerHTML = '';
+
+            if (modalTitle) {
+                modalTitle.textContent = '';
+            }
+
+            if (modalDesc) {
+                modalDesc.textContent = '';
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initGaleriThumbnailModal
+        );
+    } else {
+        initGaleriThumbnailModal();
+    }
+})();

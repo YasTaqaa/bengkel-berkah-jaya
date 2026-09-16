@@ -1,4 +1,6 @@
-<?php require_once __DIR__ . "/config.php"; ?>
+<?php
+require_once __DIR__ . "/config.php";
+?>
 <!DOCTYPE html>
 <html lang="id">
 
@@ -33,37 +35,51 @@
             } else {
             ?>
             <div class="row g-4">
-                <?php while ($g = mysqli_fetch_assoc($qGal)) { ?>
+                <?php while ($g = mysqli_fetch_assoc($qGal)) {
+                    $fotoList = [];
+                    $qFoto = @mysqli_query($conn, "SELECT foto FROM galeri_foto WHERE galeri_id=" . (int)$g['id'] . " ORDER BY urutan ASC, id ASC");
+                    if ($qFoto) {
+                        while ($f = mysqli_fetch_assoc($qFoto)) {
+                            $fotoList[] = $f['foto'];
+                        }
+                    }
+                    if (empty($fotoList) && !empty($g['foto'])) {
+                        $fotoList[] = $g['foto'];
+                    }
+                    // Ubah tiap nama file jadi path lengkap, karena modal (main.js)
+                    // memakai nilai ini langsung sebagai src gambar.
+                    $fotoListFull = array_map(function ($f) {
+                        return 'assets/img/galeri/' . $f;
+                    }, $fotoList);
+                    $fotoJson = htmlspecialchars(json_encode($fotoListFull, JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                ?>
                 <div class="col-md-4 reveal">
                     <div class="card galeri-card h-100">
-                        <div class="galeri-img-wrap" data-bs-toggle="modal" data-bs-target="#galeriModal"
-                            data-img="assets/img/galeri/<?php echo htmlspecialchars($g['foto']); ?>"
-                            data-title="<?php echo htmlspecialchars($g['judul']); ?>"
-                            data-desc="<?php echo htmlspecialchars($g['keterangan']); ?>">
-
-                            <img src="assets/img/galeri/<?php echo htmlspecialchars($g['foto']); ?>"
-                                alt="<?php echo htmlspecialchars($g['judul']); ?>"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-
-                            <div class="galeri-no-image" style="display:none;">
-                                Gambar tidak tersedia
-                            </div>
-
-                            <div class="galeri-overlay">
-                                <i class="bi bi-zoom-in"></i>
-                            </div>
+                        <div class="galeri-multi-wrap">
+                            <?php if (!empty($fotoList)) { ?>
+                            <img src="assets/img/galeri/<?php echo htmlspecialchars($fotoList[0]); ?>"
+                                class="galeri-cover-photo" alt="<?php echo htmlspecialchars($g['judul']); ?>"
+                                data-bs-toggle="modal" data-bs-target="#galeriModal"
+                                data-foto-list="<?php echo $fotoJson; ?>"
+                                data-title="<?php echo htmlspecialchars($g['judul'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-desc="<?php echo htmlspecialchars($g['keterangan'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <?php if (count($fotoList) > 1) { ?>
+                            <span class="galeri-photo-count"><i
+                                    class="bi bi-images me-1"></i><?php echo count($fotoList); ?> Foto</span>
+                            <?php } ?>
+                            <div class="galeri-overlay"><i class="bi bi-zoom-in"></i></div>
+                            <?php } else { ?>
+                            <div class="galeri-no-image">Gambar tidak tersedia</div>
+                            <?php } ?>
                         </div>
 
                         <div class="card-body">
                             <h5 class="card-title"><?php echo htmlspecialchars($g['judul']); ?></h5>
                             <p class="card-text text-muted"><?php echo nl2br(htmlspecialchars($g['keterangan'])); ?></p>
                         </div>
-
                         <div class="card-footer d-flex align-items-center gap-2">
                             <i class="bi bi-calendar3 text-muted"></i>
-                            <small class="text-muted">
-                                Selesai: <?php echo htmlspecialchars($g['tgl_selesai']); ?>
-                            </small>
+                            <small class="text-muted">Selesai <?php echo htmlspecialchars($g['tgl_selesai']); ?></small>
                         </div>
                     </div>
                 </div>
@@ -76,10 +92,8 @@
     <section class="cta-banner">
         <div class="container text-center">
             <h3 class="cta-title">Tertarik dengan hasil kerja kami?</h3>
-            <p class="cta-desc">
-                Kalau ada model yang cocok atau mau request desain sendiri,
-                tinggal hubungi kami lewat WhatsApp.
-            </p>
+            <p class="cta-desc">Kalau ada model yang cocok atau mau request desain sendiri, tinggal hubungi kami lewat
+                WhatsApp.</p>
             <a href="https://wa.me/6281234567890" target="_blank" class="btn-hero-primary">
                 <i class="bi bi-whatsapp"></i> Chat WhatsApp Sekarang
             </a>
@@ -91,11 +105,11 @@
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
                     <strong class="footer-brand">Berkah Jaya</strong>
-                    <span class="footer-sep">·</span>
+                    <span class="footer-sep"></span>
                     <span>Bengkel Las, Pejagoan, Kebumen</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
-                    <small>&copy; <?php echo date('Y'); ?> Bengkel Las Berkah Jaya.</small>
+                    <small>&copy; <?php echo date("Y"); ?> Bengkel Las Berkah Jaya.</small>
                 </div>
             </div>
         </div>
@@ -105,13 +119,20 @@
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-body p-0 text-center position-relative">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <button type="button" class="btn-close btn-close-white modal-close-gallery" data-bs-dismiss="modal"
+                        aria-label="Close">
+                    </button>
+
                     <img id="modalGaleriImg" src="" alt="" class="modal-preview-img">
+
+                    <div id="modalThumbnailList" class="modal-thumbnail-list"></div>
+
                     <div class="modal-caption px-3 pb-2">
                         <h5 id="modalGaleriTitle"></h5>
                         <p id="modalGaleriDesc"></p>
                     </div>
+
                 </div>
             </div>
         </div>

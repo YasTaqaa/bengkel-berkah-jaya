@@ -1004,8 +1004,6 @@ height: 76px;
 
 /* =========================================================
    ESTIMASI HARGA - HALAMAN PESAN
-   Tempelkan seluruh blok ini DI BAGIAN PALING BAWAH
-   file assets/css/style.css
    ========================================================= */
 
 /* Kotak biru: estimasi umum setelah layanan dipilih */
@@ -1108,5 +1106,249 @@ height: 76px;
 
     .estimasi-model-box .nilai {
         text-align: left;
+    }
+}
+
+/* =========================================================
+   GALERI MULTI-FOTO
+   ========================================================= */
+
+.galeri-multi-wrap {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+    background: #e2e8f0;
+}
+
+.galeri-multi-wrap .carousel,
+.galeri-multi-wrap .carousel-inner,
+.galeri-multi-wrap .carousel-item,
+.galeri-multi-wrap .carousel-item img {
+    height: 100%;
+}
+
+.galeri-multi-wrap .carousel-item img {
+    display: block;
+    width: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* Tombol prev/next hanya muncul ketika cursor berada di kartu foto */
+.galeri-multi-wrap .carousel-control-prev,
+.galeri-multi-wrap .carousel-control-next {
+    width: 38px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 4;
+}
+
+.galeri-multi-wrap:hover .carousel-control-prev,
+.galeri-multi-wrap:hover .carousel-control-next {
+    opacity: 1;
+}
+
+/* Badge jumlah foto, hanya muncul bila proyek punya lebih dari satu foto */
+.galeri-photo-count {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    padding: 4px 9px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.78);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+/* Fallback jika foto tidak tersedia */
+.galeri-multi-wrap .galeri-no-image {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+    .galeri-multi-wrap {
+        height: 200px;
+    }
+
+    /* Di HP tombol selalu sedikit terlihat agar pengguna tahu bisa digeser */
+    .galeri-multi-wrap .carousel-control-prev,
+    .galeri-multi-wrap .carousel-control-next {
+        opacity: 0.75;
+    }
+}
+
+.galeri-cover-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform .35s ease;
+}
+
+.galeri-card:hover .galeri-cover-photo {
+    transform: scale(1.06);
+}
+
+/* Badge jumlah foto */
+.galeri-photo-count {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    padding: 4px 9px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, .8);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.galeri-multi-wrap .galeri-no-image {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: .95rem;
+    font-weight: 600;
+}
+
+
+
+/* =====================================================
+   FINAL MODAL GALERI THUMBNAIL
+   Letakkan paling bawah style.css
+   ===================================================== */
+
+#galeriModal {
+    z-index: 2000;
+}
+
+#galeriModal .modal-dialog {
+    z-index: 2001;
+}
+
+#galeriModal .modal-content {
+    position: relative;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#galeriModal .modal-body {
+    position: relative;
+    z-index: 2002;
+    padding: 0 !important;
+}
+
+#galeriModal .modal-close-gallery {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    z-index: 2050 !important;
+    display: block !important;
+    width: 42px !important;
+    height: 42px !important;
+    padding: 10px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+#galeriModal .modal-preview-img {
+    position: relative;
+    z-index: 2003;
+    display: block;
+    width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    background: #000;
+    border-radius: 14px;
+    margin: 0 auto;
+}
+
+#galeriModal .modal-thumbnail-list {
+    position: relative;
+    z-index: 2050;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 12px 4px 4px;
+    overflow-x: auto;
+}
+
+#galeriModal .modal-thumbnail {
+    position: relative;
+    z-index: 2051;
+    display: block;
+    width: 70px;
+    height: 54px;
+    flex: 0 0 auto;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: 7px;
+    background: #111;
+    opacity: 0.65;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+#galeriModal .modal-thumbnail:hover,
+#galeriModal .modal-thumbnail.active {
+    border-color: #fff;
+    opacity: 1;
+}
+
+#galeriModal .modal-thumbnail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+#galeriModal .modal-caption {
+    position: relative;
+    z-index: 2050;
+    color: #fff;
+}
+
+#galeriModal .modal-caption h5 {
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+#galeriModal .modal-caption p {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 575.98px) {
+    #galeriModal .modal-preview-img {
+        max-height: 58vh;
+    }
+
+    #galeriModal .modal-thumbnail {
+        width: 58px;
+        height: 46px;
     }
 }

@@ -1,30 +1,53 @@
 <?php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . "/../config.php";
+
 if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     header("Location: login.php");
     exit;
 }
 
+// Link "Lihat Gambar" memicu modal preview, bukan tab baru.
 function linkify(string $text): string {
-    $text = htmlspecialchars($text);
-    $pattern = '/(https?:\/\/[^\s]+)/i';
-    return preg_replace_callback($pattern, function($m) {
-        return '<a href="'.$m[1].'" target="_blank" rel="noopener">Lihat Gambar</a>';
-    }, $text);
+    $textEscaped = htmlspecialchars($text);
+    return preg_replace_callback('/https?:\/\/\S+/i', function ($m) {
+        $url = htmlspecialchars($m[0], ENT_QUOTES);
+        return '<a href="javascript:void(0)" class="link-preview-gambar" data-img="' . $url . '">Lihat Gambar</a>';
+    }, $textEscaped);
+}
+
+// Hitung total harga dari ukuran (format "3 x 1.5") dikali harga per m².
+// Kalau ukuran tidak berformat panjang x tinggi, anggap harga tersimpan sudah berupa total.
+function hitungTotalHarga(string $ukuran, float $hargaPerM2): float {
+    $ukuran = strtolower(trim($ukuran));
+    $ukuran = str_replace(',', '.', $ukuran);
+
+    if (preg_match('/^([\d.]+)\s*[x×*]\s*([\d.]+)/', $ukuran, $m)) {
+        $panjang = (float)$m[1];
+        $tinggi  = (float)$m[2];
+        $luas    = $panjang * $tinggi;
+        return $luas * (float)$hargaPerM2;
+    }
+
+    return (float)$hargaPerM2;
 }
 
 $dari   = isset($_GET['dari']) ? $_GET['dari'] : '';
 $sampai = isset($_GET['sampai']) ? $_GET['sampai'] : '';
-$where  = "1=1";
-if ($dari)   $where .= " AND DATE(p.tgl_pesan) >= '" . mysqli_real_escape_string($conn, $dari) . "'";
-if ($sampai) $where .= " AND DATE(p.tgl_pesan) <= '" . mysqli_real_escape_string($conn, $sampai) . "'";
+
+$where = "1=1";
+if ($dari) {
+    $where .= " AND DATE(p.tgl_pesan) >= '" . mysqli_real_escape_string($conn, $dari) . "'";
+}
+if ($sampai) {
+    $where .= " AND DATE(p.tgl_pesan) <= '" . mysqli_real_escape_string($conn, $sampai) . "'";
+}
 
 $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
-FROM proyek p
-LEFT JOIN layanan l ON p.layanan_id=l.id
-LEFT JOIN galeri g ON p.galeri_id=g.id
-WHERE $where
-ORDER BY p.id DESC");
+                              FROM proyek p
+                              LEFT JOIN layanan l ON p.layanan_id = l.id
+                              LEFT JOIN galeri g ON p.galeri_id = g.id
+                              WHERE $where
+                              ORDER BY p.id DESC");
 $total_rows = mysqli_num_rows($list);
 ?>
 <!DOCTYPE html>
@@ -134,8 +157,30 @@ $total_rows = mysqli_num_rows($list);
         white-space: nowrap;
     }
 
+    .btn-export-pdf {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #e82222;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0 16px;
+        height: 38px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: background 0.2s;
+        white-space: nowrap;
+    }
+
     .btn-export:hover {
         background: #15803d;
+        color: #fff;
+    }
+
+    .btn-export-pdf:hover {
+        background: #dc2626;
         color: #fff;
     }
 
@@ -218,6 +263,10 @@ $total_rows = mysqli_num_rows($list);
         -webkit-overflow-scrolling: touch;
     }
 
+    .link-preview-gambar {
+        cursor: pointer;
+    }
+
     @media (max-width: 575.98px) {
 
         .table th,
@@ -234,7 +283,7 @@ $total_rows = mysqli_num_rows($list);
 </head>
 
 <body>
-    <?php include 'navbar-menu.php'; ?>
+    <?php include "navbar-menu.php"; ?>
     <div class="container-fluid px-3 px-md-4 py-4">
         <form method="GET" action="">
             <div class="filter-bar">
@@ -251,20 +300,30 @@ $total_rows = mysqli_num_rows($list);
                     <a href="riwayat-pesanan.php" class="btn-reset"><i class="bi bi-x me-1"></i> Reset</a>
                     <?php } ?>
                     <a href="export-pesanan.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>"
-                        class="btn-export ms-auto"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+                        class="btn-export ms-auto">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </a>
+
+                    <a href="export-pdf.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>"
+                        class="btn-export btn-export-pdf">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </a>
                 </div>
                 <?php if ($dari || $sampai) { ?>
-                <p class="result-count mt-2 mb-0">Menampilkan <strong><?php echo $total_rows; ?></strong> pesanan
-                    <?php if ($dari) echo "dari <strong>".htmlspecialchars($dari)."</strong>"; ?>
-                    <?php if ($sampai) echo " s/d <strong>".htmlspecialchars($sampai)."</strong>"; ?>
+                <p class="result-count mt-2 mb-0">
+                    Menampilkan <strong><?php echo $total_rows; ?></strong> pesanan
+                    <?php if ($dari) echo "dari <strong>" . htmlspecialchars($dari) . "</strong>"; ?>
+                    <?php if ($sampai) echo " s/d <strong>" . htmlspecialchars($sampai) . "</strong>"; ?>
                 </p>
                 <?php } ?>
             </div>
         </form>
 
         <div class="admin-card">
-            <div class="admin-card-header">Riwayat Pesanan <span class="fw-normal text-muted ms-2"
-                    style="font-size:0.8rem"><?php echo $total_rows; ?> data</span></div>
+            <div class="admin-card-header">
+                Riwayat Pesanan
+                <span class="fw-normal text-muted ms-2" style="font-size:0.8rem"><?php echo $total_rows; ?> data</span>
+            </div>
             <div class="table-scroll">
                 <table class="table table-hover mb-0">
                     <thead>
@@ -289,17 +348,15 @@ $total_rows = mysqli_num_rows($list);
                             <td colspan="12" class="text-center text-muted py-4">Tidak ada data pesanan.</td>
                         </tr>
                         <?php } else {
-            $no = 1;
-            while ($p = mysqli_fetch_assoc($list)) {
-                $status = strtolower($p['status']);
-                $badge = match($status) {
-                    'baru' => 'badge-baru',
-                    'proses' => 'badge-proses',
-                    'selesai' => 'badge-selesai',
-                    'batal' => 'badge-batal',
-                    default => 'badge-default'
-                };
-          ?>
+                            $no = 1;
+                            while ($p = mysqli_fetch_assoc($list)) {
+                                $status = strtolower($p['status']);
+                                $badge = match ($status) {
+                                    'baru' => 'badge-baru', 'proses' => 'badge-proses', 'selesai' => 'badge-selesai', 'batal' => 'badge-batal', default => 'badge-default'
+                                };
+
+                                $totalHarga = hitungTotalHarga($p['ukuran'], $p['harga']);
+                        ?>
                         <tr>
                             <td class="text-muted"><?php echo $no++; ?></td>
                             <td><strong><?php echo htmlspecialchars($p['nama']); ?></strong></td>
@@ -307,25 +364,68 @@ $total_rows = mysqli_num_rows($list);
                             <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
                             <td class="text-muted">
                                 <?php echo $p['nama_model'] ? htmlspecialchars($p['nama_model']) : '-'; ?></td>
-                            <td style="max-width:180px; word-break:break-word;">
-                                <?php echo $p['catatan'] ? linkify($p['catatan']) : '-'; ?></td>
-                            <td><?php echo htmlspecialchars($p['ukuran']) ?: '-'; ?></td>
-                            <td>Rp <?php echo number_format($p['harga'],0,',','.'); ?></td>
+                            <td style="max-width:180px; word-break:break-word">
+                                <?php echo $p['catatan'] ? linkify($p['catatan']) : '-'; ?>
+                            </td>
+                            <td><?php echo $p['ukuran'] ? htmlspecialchars($p['ukuran']) : '-'; ?></td>
+                            <td>Rp <?php echo number_format($totalHarga, 0, ',', '.'); ?></td>
                             <td><span
                                     class="badge-status <?php echo $badge; ?>"><?php echo htmlspecialchars($p['status']); ?></span>
                             </td>
                             <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
-                            <td class="text-muted"><?php echo $p['tgl_selesai'] ?: '-'; ?></td>
-                            <td><a href="nota.php?id=<?php echo $p['id']; ?>" class="btn-nota" target="_blank"><i
-                                        class="bi bi-printer me-1"></i>Nota</a></td>
+                            <td class="text-muted"><?php echo $p['tgl_selesai'] ? $p['tgl_selesai'] : '-'; ?></td>
+                            <td>
+                                <a href="nota.php?id=<?php echo $p['id']; ?>" class="btn-nota" target="_blank">
+                                    <i class="bi bi-printer me-1"></i>Nota
+                                </a>
+                            </td>
                         </tr>
-                        <?php } } ?>
+                        <?php }
+                        } ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- Modal Preview Gambar (dipicu dari link "Lihat Gambar" di kolom Catatan) -->
+    <div class="modal fade" id="previewGambarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none;">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3"
+                        data-bs-dismiss="modal" aria-label="Close"
+                        style="background-color:rgba(0,0,0,0.6); border-radius:50%; opacity:1; padding:10px; width:34px; height:34px;"></button>
+                    <img id="previewGambarImg" src="" alt="Preview gambar"
+                        style="width:100%; max-height:80vh; object-fit:contain; border-radius:12px; background:#000;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('previewGambarModal');
+        const modalImg = document.getElementById('previewGambarImg');
+        if (!modalEl || !modalImg) return;
+
+        const modal = new bootstrap.Modal(modalEl);
+
+        document.body.addEventListener('click', function(e) {
+            const trigger = e.target.closest('.link-preview-gambar');
+            if (!trigger) return;
+
+            e.preventDefault();
+            modalImg.src = trigger.getAttribute('data-img');
+            modal.show();
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            modalImg.src = '';
+        });
+    });
+    </script>
 </body>
 
 </html>
