@@ -8,21 +8,33 @@ if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
 }
 
 $qLayanan = mysqli_query($conn, "SELECT * FROM layanan ORDER BY urutan ASC");
+$qGaleri  = mysqli_query($conn, "SELECT id, judul, foto, layanan_id, harga FROM galeri ORDER BY tgl_selesai DESC, id DESC");
+
+$dataGaleri = [];
+if ($qGaleri) {
+    while ($g = mysqli_fetch_assoc($qGaleri)) {
+        $dataGaleri[] = $g;
+    }
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama       = input_filter($conn, $_POST['nama']);
     $hp         = input_filter($conn, $_POST['hp']);
     $layanan_id = (int)$_POST['layanan_id'];
+    $galeri_id  = !empty($_POST['galeri_id']) ? (int)$_POST['galeri_id'] : null;
     $lokasi     = input_filter($conn, $_POST['lokasi']);
     $catatan    = input_filter($conn, $_POST['catatan']);
+    $ukuran     = input_filter($conn, $_POST['ukuran'] ?? '');
+    $harga      = !empty($_POST['harga']) ? (float)$_POST['harga'] : 0;
 
     if (empty($nama) || empty($hp) || empty($layanan_id) || empty($lokasi)) {
-        $error = 'Semua field wajib diisi.';
+        $error = 'Nama, No. HP, Layanan, dan Lokasi wajib diisi.';
     } else {
-        $stmt = $conn->prepare("INSERT INTO proyek (nama, hp, layanan_id, lokasi, ukuran, harga, catatan, status, tgl_pesan)
-                                VALUES (?, ?, ?, ?, '', 0, ?, 'baru', NOW())");
-        $stmt->bind_param("ssiss", $nama, $hp, $layanan_id, $lokasi, $catatan);
+        $stmt = $conn->prepare("INSERT INTO proyek (nama, hp, layanan_id, galeri_id, lokasi, ukuran, harga, catatan, status, tgl_pesan)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'baru', NOW())");
+        $stmt->bind_param("ssiissds", $nama, $hp, $layanan_id, $galeri_id, $lokasi, $ukuran, $harga, $catatan);
         $stmt->execute();
 
         header("Location: ../proyek.php");
@@ -117,6 +129,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: #e2e8f0;
         color: #1e293b;
     }
+
+    .model-pilih-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .model-pilih-card {
+        display: block;
+        cursor: pointer;
+        width: 88px;
+        text-align: center;
+    }
+
+    .model-pilih-card input {
+        display: none;
+    }
+
+    .model-pilih-card img {
+        width: 88px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 2px solid transparent;
+        display: block;
+        margin-bottom: 3px;
+    }
+
+    .model-pilih-card.active img {
+        border-color: #2563eb;
+    }
+
+    .model-pilih-card span {
+        font-size: 0.68rem;
+        color: #475569;
+        display: block;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .model-pilih-none {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 88px;
+        height: 64px;
+        border-radius: 6px;
+        border: 2px dashed #cbd5e1;
+        font-size: 0.68rem;
+        color: #94a3b8;
+        text-align: center;
+    }
+
+    .model-pilih-card.active .model-pilih-none {
+        border-color: #2563eb;
+        color: #2563eb;
+    }
     </style>
 </head>
 
@@ -154,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="mb-3">
                     <label class="form-label">Layanan</label>
-                    <select name="layanan_id" class="form-select" required>
+                    <select name="layanan_id" id="layananSelect" class="form-select" required>
                         <option value="">-- Pilih Layanan --</option>
                         <?php
                         mysqli_data_seek($qLayanan, 0);
@@ -167,9 +241,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="mb-3">
+                    <label class="form-label">Model dari Galeri <span
+                            class="text-muted fw-normal">(opsional)</span></label>
+                    <input type="hidden" name="galeri_id" id="galeriIdInput"
+                        value="<?php echo htmlspecialchars($_POST['galeri_id'] ?? ''); ?>">
+                    <div id="modelPilihWrap">
+                        <p class="text-muted small mb-0">Pilih layanan terlebih dahulu untuk melihat model.</p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label">Lokasi / Alamat Lengkap</label>
                     <textarea name="lokasi" class="form-control" rows="2"
                         required><?php echo htmlspecialchars($_POST['lokasi'] ?? ''); ?></textarea>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Ukuran <span class="text-muted fw-normal">(opsional)</span></label>
+                        <input type="text" name="ukuran" class="form-control" placeholder="3 x 1.5"
+                            value="<?php echo htmlspecialchars($_POST['ukuran'] ?? ''); ?>">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Harga / m² <span
+                                class="text-muted fw-normal">(opsional)</span></label>
+                        <input type="number" name="harga" class="form-control" min="0" placeholder="Isi harga"
+                            value="<?php echo htmlspecialchars($_POST['harga'] ?? ''); ?>">
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -191,7 +289,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div>
 
+    <script>
+    window.dataGaleriTambah = <?php echo json_encode($dataGaleri, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const layananSelect = document.getElementById('layananSelect');
+        const wrap = document.getElementById('modelPilihWrap');
+        const hidden = document.getElementById('galeriIdInput');
+        const dataGaleri = window.dataGaleriTambah || [];
+        const selectedGaleriId = hidden.value;
+
+        function getLayananId(item) {
+            return item.layanan_id ?? item.layananid ?? item.layananId;
+        }
+
+        function fotoPath(foto) {
+            const value = String(foto || '');
+
+            if (!value) {
+                return '';
+            }
+
+            if (/^https?:\/\//i.test(value)) {
+                return value;
+            }
+            return '../../assets/img/galeri/' +
+                value.replace(/^assets[\\/]img[\\/]galeri[\\/]/, '');
+        }
+
+        function render() {
+            const layananId = layananSelect.value;
+            wrap.innerHTML = '';
+
+            if (!layananId) {
+                wrap.innerHTML =
+                    '<p class="text-muted small mb-0">Pilih layanan terlebih dahulu untuk melihat model.</p>';
+                return;
+            }
+
+            const filtered = dataGaleri.filter(function(g) {
+                return String(getLayananId(g)) === String(layananId);
+            });
+
+            if (!filtered.length) {
+                wrap.innerHTML = '<p class="text-muted small mb-0">Belum ada model untuk layanan ini.</p>';
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'model-pilih-grid';
+
+            const noneCard = document.createElement('label');
+            noneCard.className = 'model-pilih-card' + (selectedGaleriId ? '' : ' active');
+            noneCard.innerHTML = '<input type="radio" name="model_radio" value=""' + (selectedGaleriId ? '' :
+                    ' checked') + '>' +
+                '<div class="model-pilih-none">Tanpa model</div>';
+            grid.appendChild(noneCard);
+
+            filtered.forEach(function(g) {
+                const isActive = String(g.id) === String(selectedGaleriId);
+                const card = document.createElement('label');
+                card.className = 'model-pilih-card' + (isActive ? ' active' : '');
+                card.innerHTML = '<input type="radio" name="model_radio" value="' + g.id + '"' + (
+                        isActive ? ' checked' : '') + '>' +
+                    '<img src="' + fotoPath(g.foto) + '" alt="' + (g.judul || '') + '">' +
+                    '<span>' + (g.judul || '') + '</span>';
+                grid.appendChild(card);
+            });
+
+            wrap.appendChild(grid);
+
+            grid.querySelectorAll('input[name="model_radio"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    hidden.value = this.value;
+                    grid.querySelectorAll('.model-pilih-card').forEach(function(c) {
+                        c.classList.remove('active');
+                    });
+                    this.closest('.model-pilih-card').classList.add('active');
+                });
+            });
+        }
+
+        layananSelect.addEventListener('change', function() {
+            hidden.value = '';
+            render();
+        });
+
+        render();
+    });
+    </script>
 </body>
 
 </html>

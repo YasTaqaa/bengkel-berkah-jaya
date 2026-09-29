@@ -241,7 +241,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="number" name="harga" class="form-control" min="0"
                         value="<?php echo htmlspecialchars($_POST['harga'] ?? ''); ?>">
                     <div class="harga-hint"><i class="bi bi-lightbulb me-1"></i>Opsional. Isi angka saja, contoh
-                        <code>450000</code>.</div>
+                        <code>450000</code>.
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -288,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         files.forEach(function(file, i) {
-            const reader = new FileReader();
+            const reader = new window.FileReader();
             reader.onload = function(e) {
                 const item = document.createElement('div');
                 item.className = 'foto-preview-item';

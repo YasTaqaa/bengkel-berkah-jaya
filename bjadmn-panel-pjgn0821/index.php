@@ -5,17 +5,64 @@ if (!isset($_SESSION['admin_login']) || $_SESSION['admin_login'] !== true) {
     exit;
 }
 
+function hitungTotalHargaDashboard(string $ukuran, float $hargaPerM2): float
+{
+    $ukuran = strtolower(trim($ukuran));
+    $ukuran = str_replace(',', '.', $ukuran);
+
+    if (preg_match('/^([\d.]+)\s*[x×*]\s*([\d.]+)/', $ukuran, $match)) {
+        $panjang = (float) $match[1];
+        $tinggi = (float) $match[2];
+
+        return $panjang * $tinggi * $hargaPerM2;
+    }
+
+    return $hargaPerM2;
+}
+
 $tot     = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS jml FROM proyek"));
 $baru    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS jml FROM proyek WHERE status='baru'"));
 $selesai = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS jml FROM proyek WHERE status='selesai'"));
-$pend    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COALESCE(SUM(harga),0) AS total FROM proyek WHERE status='selesai'"));
+$pendapatan = 0;
+
+$qPendapatan = mysqli_query($conn, "
+    SELECT
+        p.ukuran,
+        p.harga,
+        p.galeri_id,
+        g.harga AS harga_galeri
+    FROM proyek p
+    LEFT JOIN galeri g ON p.galeri_id = g.id
+    WHERE p.status = 'selesai'
+");
+
+while ($dataPendapatan = mysqli_fetch_assoc($qPendapatan)) {
+    $hargaPerM2 = (float) $dataPendapatan['harga'];
+
+    // Jika harga proyek belum diisi, gunakan harga dari model galeri.
+    if ($hargaPerM2 <= 0 && !empty($dataPendapatan['galeri_id'])) {
+        $hargaPerM2 = (float) ($dataPendapatan['harga_galeri'] ?? 0);
+    }
+
+    $pendapatan += hitungTotalHargaDashboard(
+        (string) ($dataPendapatan['ukuran'] ?? ''),
+        $hargaPerM2
+    );
+}
 
 $proses = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS jml FROM proyek WHERE status='proses'"));
 
-$riwayat = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
-                                FROM proyek p
-                                LEFT JOIN layanan l ON p.layanan_id=l.id
-                                ORDER BY p.id DESC LIMIT 10");
+$riwayat = mysqli_query($conn, "
+    SELECT
+        p.*,
+        l.nama AS nama_layanan,
+        g.harga AS harga_galeri
+    FROM proyek p
+    LEFT JOIN layanan l ON p.layanan_id = l.id
+    LEFT JOIN galeri g ON p.galeri_id = g.id
+    ORDER BY p.id DESC
+    LIMIT 10
+");
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -346,7 +393,9 @@ $riwayat = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                     <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
                     <div>
                         <div class="stat-label">Pendapatan</div>
-                        <div class="stat-value">Rp <?php echo number_format($pend['total'],0,',','.'); ?></div>
+                        <div class="stat-value">
+                            Rp <?php echo number_format($pendapatan, 0, ',', '.'); ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -370,17 +419,31 @@ $riwayat = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                             <th>Harga</th>
                             <th>Status</th>
                             <th>Tgl Pesan</th>
+                            <th>Tgl Selesai</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $no = 1; while ($p = mysqli_fetch_assoc($riwayat)) {
-                            $status = strtolower($p['status']);
-                            $badge_class = match($status) {
-                                'baru'    => 'badge-baru',
-                                'proses'  => 'badge-proses',
-                                'selesai' => 'badge-selesai',
-                                'batal'   => 'badge-batal',
-                                default   => 'badge-default'
+                        $status = strtolower($p['status']);
+
+                        $hargaPerM2 = (float) $p['harga'];
+
+                        // Fallback harga dari model galeri jika harga proyek belum diisi.
+                        if ($hargaPerM2 <= 0 && !empty($p['galeri_id'])) {
+                            $hargaPerM2 = (float) ($p['harga_galeri'] ?? 0);
+                        }
+
+                        $totalHarga = hitungTotalHargaDashboard(
+                            (string) ($p['ukuran'] ?? ''),
+                            $hargaPerM2
+                        );
+
+                        $badge_class = match ($status) {
+                            'baru'    => 'badge-baru',
+                            'proses'  => 'badge-proses',
+                            'selesai' => 'badge-selesai',
+                            'batal'   => 'badge-batal',
+                            default   => 'badge-default',
                             };
                         ?>
                         <tr>
@@ -389,11 +452,24 @@ $riwayat = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan
                             <td><?php echo htmlspecialchars($p['hp']); ?></td>
                             <td><?php echo htmlspecialchars($p['nama_layanan']); ?></td>
                             <td><?php echo htmlspecialchars($p['ukuran']) ?: '-'; ?></td>
-                            <td>Rp <?php echo number_format($p['harga'],0,',','.'); ?></td>
+                            <td>Rp <?php echo number_format($totalHarga, 0, ',', '.'); ?></td>
                             <td><span
                                     class="badge-status <?php echo $badge_class; ?>"><?php echo htmlspecialchars($p['status']); ?></span>
                             </td>
-                            <td class="text-muted"><?php echo $p['tgl_pesan']; ?></td>
+                            <td class="text-muted">
+                                <?php echo htmlspecialchars($p['tgl_pesan'] ?? '-'); ?>
+                            </td>
+
+                            <td class="text-muted">
+                                <?php
+    $tglSelesai = $p['tgl_selesai'] ?? null;
+
+    echo !empty($tglSelesai) &&
+        $tglSelesai !== '0000-00-00 00:00:00'
+        ? htmlspecialchars($tglSelesai)
+        : '-';
+    ?>
+                            </td>
                         </tr>
                         <?php } ?>
                     </tbody>

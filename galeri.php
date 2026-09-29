@@ -74,8 +74,25 @@ require_once __DIR__ . "/config.php";
                         </div>
 
                         <div class="card-body">
-                            <h5 class="card-title"><?php echo htmlspecialchars($g['judul']); ?></h5>
-                            <p class="card-text text-muted"><?php echo nl2br(htmlspecialchars($g['keterangan'])); ?></p>
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($g['judul']); ?>
+                            </h5>
+
+                            <?php if (isset($g['harga']) && (float)$g['harga'] > 0): ?>
+                            <div class="galeri-card-price">
+                                <i class="bi bi-tag-fill me-1"></i>
+                                Rp <?php echo number_format((float)$g['harga'], 0, ',', '.'); ?> /m²
+                            </div>
+                            <?php else: ?>
+                            <div class="galeri-card-price galeri-card-price-empty">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Harga menyesuaikan ukuran
+                            </div>
+                            <?php endif; ?>
+
+                            <p class="card-text text-muted">
+                                <?php echo nl2br(htmlspecialchars($g['keterangan'])); ?>
+                            </p>
                         </div>
                         <div class="card-footer d-flex align-items-center gap-2">
                             <i class="bi bi-calendar3 text-muted"></i>

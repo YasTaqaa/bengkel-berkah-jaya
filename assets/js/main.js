@@ -221,7 +221,12 @@ if (layananSelect && galeriWrap && galeriIdInput) {
             return;
         }
 
-        const filtered = dataGaleri.filter(function (g) { return g.layanan_id == layananId; });
+        const filtered = dataGaleri.filter(function (g) {
+        const layananGaleri =
+        g.layanan_id ?? g.layananid ?? g.layananId;
+
+        return String(layananGaleri) === String(layananId);
+        });
 
         if (filtered.length === 0) {
             galeriWrap.innerHTML = '<p class="text-muted small mb-0">Belum ada model untuk layanan ini.</p>';
@@ -396,3 +401,68 @@ if (nav) nav.classList.toggle('nav-scrolled', window.scrollY > 15);
         initGaleriThumbnailModal();
     }
 })();
+
+// =============================================
+// Preview upload foto referensi pada form pesan
+// =============================================
+function initPesanReferensi() {
+    const inputReferensi =
+        document.getElementById('inputReferensi');
+
+    const referensiPreview =
+        document.getElementById('referensiPreview');
+
+    if (!inputReferensi || !referensiPreview) {
+        return;
+    }
+
+    inputReferensi.addEventListener('change', function () {
+        referensiPreview.innerHTML = '';
+
+        const files = Array.from(inputReferensi.files).slice(0, 3);
+
+        const tipeDiizinkan = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ];
+
+        const maksimalUkuran = 3 * 1024 * 1024;
+
+        if (inputReferensi.files.length > 3) {
+            alert('Maksimal 3 gambar referensi.');
+        }
+
+        files.forEach(function (file) {
+            if (!tipeDiizinkan.includes(file.type)) {
+                return;
+            }
+
+            if (file.size > maksimalUkuran) {
+                return;
+            }
+
+            const reader = new window.FileReader();
+
+            reader.onload = function (event) {
+                const img = document.createElement('img');
+
+                img.src = event.target.result;
+                img.alt = 'Preview gambar referensi pelanggan';
+
+                referensiPreview.appendChild(img);
+            };
+
+            reader.readAsDataURL(file);
+        });
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener(
+        'DOMContentLoaded',
+        initPesanReferensi
+    );
+} else {
+    initPesanReferensi();
+}

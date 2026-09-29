@@ -160,47 +160,138 @@ foreach ($deskripsiLines as $line) {
             </div>
 
             <!-- Galeri Layanan -->
-            <div class="reveal">
-                <div class="text-center mb-4">
-                    <span class="section-label">Hasil Pengerjaan</span>
-                    <h3 class="section-title mb-0">Galeri <?php echo htmlspecialchars($layanan['nama']); ?></h3>
-                </div>
+            <?php if (mysqli_num_rows($qGaleri) == 0) { ?>
+            <p class="text-center text-muted py-4">
+                Belum ada galeri untuk layanan ini.
+            </p>
+            <?php } else { ?>
+            <div class="row g-4">
+                <?php while ($g = mysqli_fetch_assoc($qGaleri)) { ?>
 
-                <?php if (mysqli_num_rows($qGaleri) == 0) { ?>
-                <p class="text-center text-muted py-4">Belum ada galeri untuk layanan ini.</p>
-                <?php } else { ?>
-                <div class="row g-4">
-                    <?php while ($g = mysqli_fetch_assoc($qGaleri)) { ?>
-                    <div class="col-md-4 reveal">
-                        <div class="card galeri-card h-100">
-                            <div class="galeri-img-wrap" data-bs-toggle="modal" data-bs-target="#galeriModal"
-                                data-img="assets/img/galeri/<?php echo htmlspecialchars($g['foto']); ?>"
-                                data-title="<?php echo htmlspecialchars($g['judul']); ?>"
-                                data-desc="<?php echo htmlspecialchars($g['keterangan']); ?>">
-                                <img src="assets/img/galeri/<?php echo htmlspecialchars($g['foto']); ?>"
-                                    alt="<?php echo htmlspecialchars($g['judul']); ?>"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <div class="galeri-no-image" style="display:none">Gambar tidak tersedia</div>
-                                <div class="galeri-overlay"><i class="bi bi-zoom-in"></i></div>
+                <?php
+            // Ambil semua foto tambahan dari tabel galeri_foto.
+            $fotoList = [];
+
+            $qFoto = mysqli_query(
+                $conn,
+                "SELECT foto
+                 FROM galeri_foto
+                 WHERE galeri_id = " . (int)$g['id'] . "
+                 ORDER BY urutan ASC, id ASC"
+            );
+
+            if ($qFoto) {
+                while ($f = mysqli_fetch_assoc($qFoto)) {
+                    $fotoList[] = $f['foto'];
+                }
+            }
+
+            // Jika belum ada foto tambahan, gunakan foto utama galeri.
+            if (empty($fotoList) && !empty($g['foto'])) {
+                $fotoList[] = $g['foto'];
+            }
+
+            // Modal di main.js membutuhkan path lengkap untuk src gambar.
+            $fotoListFull = array_map(function ($foto) {
+                return 'assets/img/galeri/' . ltrim($foto, '/');
+            }, $fotoList);
+
+            $fotoJson = htmlspecialchars(
+                json_encode($fotoListFull, JSON_UNESCAPED_SLASHES),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+            ?>
+
+                <div class="col-md-4 reveal">
+                    <div class="card galeri-card h-100">
+                        <div class="galeri-multi-wrap">
+
+                            <?php if (!empty($fotoList)) { ?>
+                            <img src="assets/img/galeri/<?php echo htmlspecialchars($fotoList[0]); ?>"
+                                class="galeri-cover-photo" alt="<?php echo htmlspecialchars($g['judul']); ?>"
+                                data-bs-toggle="modal" data-bs-target="#galeriModal"
+                                data-foto-list="<?php echo $fotoJson; ?>"
+                                data-title="<?php echo htmlspecialchars($g['judul'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-desc="<?php echo htmlspecialchars($g['keterangan'], ENT_QUOTES, 'UTF-8'); ?>">
+
+                            <?php if (count($fotoList) > 1) { ?>
+                            <span class="galeri-photo-count">
+                                <i class="bi bi-images me-1"></i>
+                                <?php echo count($fotoList); ?> Foto
+                            </span>
+                            <?php } ?>
+
+                            <div class="galeri-overlay">
+                                <i class="bi bi-zoom-in"></i>
                             </div>
-                            <div class="card-body">
-                                <h5 class="card-title"><?php echo htmlspecialchars($g['judul']); ?></h5>
-                                <p class="card-text text-muted">
-                                    <?php echo nl2br(htmlspecialchars($g['keterangan'])); ?></p>
+
+                            <?php } else { ?>
+                            <div class="galeri-no-image">
+                                Gambar tidak tersedia
                             </div>
-                            <div class="card-footer d-flex align-items-center gap-2">
-                                <i class="bi bi-calendar3 text-muted"></i>
-                                <small class="text-muted">Selesai
-                                    <?php echo htmlspecialchars($g['tgl_selesai']); ?></small>
+                            <?php } ?>
+
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($g['judul']); ?>
+                            </h5>
+
+                            <?php if (isset($g['harga']) && (float)$g['harga'] > 0) { ?>
+                            <div class="galeri-card-price">
+                                <i class="bi bi-tag-fill me-1"></i>
+                                Rp <?php echo number_format((float)$g['harga'], 0, ',', '.'); ?> /m²
                             </div>
+                            <?php } else { ?>
+                            <div class="galeri-card-price galeri-card-price-empty">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Harga menyesuaikan ukuran
+                            </div>
+                            <?php } ?>
+
+                            <p class="card-text text-muted">
+                                <?php echo nl2br(htmlspecialchars($g['keterangan'])); ?>
+                            </p>
+                        </div>
+
+                        <div class="card-footer d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar3 text-muted"></i>
+                            <small class="text-muted">
+                                Selesai <?php echo htmlspecialchars($g['tgl_selesai']); ?>
+                            </small>
                         </div>
                     </div>
-                    <?php } ?>
                 </div>
                 <?php } ?>
             </div>
+            <?php } ?>
         </div>
     </section>
+
+    <!-- Modal Preview Galeri -->
+    <div class="modal fade modal-galeri" id="galeriModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-body p-0 text-center position-relative">
+
+                    <button type="button" class="btn-close btn-close-white modal-close-gallery" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+
+                    <img id="modalGaleriImg" src="" alt="" class="modal-preview-img">
+
+                    <div id="modalThumbnailList" class="modal-thumbnail-list"></div>
+
+                    <div class="modal-caption px-3 pb-2">
+                        <h5 id="modalGaleriTitle"></h5>
+                        <p id="modalGaleriDesc"></p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <div class="container">
@@ -216,23 +307,6 @@ foreach ($deskripsiLines as $line) {
             </div>
         </div>
     </footer>
-
-    <!-- Modal Preview Galeri (dipakai bersama dengan halaman Galeri) -->
-    <div class="modal fade modal-galeri" id="galeriModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-body p-0 text-center position-relative">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3"
-                        data-bs-dismiss="modal" aria-label="Close"></button>
-                    <img id="modalGaleriImg" src="" alt="" class="modal-preview-img">
-                    <div class="modal-caption px-3 pb-2">
-                        <h5 id="modalGaleriTitle"></h5>
-                        <p id="modalGaleriDesc"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/main.js"></script>

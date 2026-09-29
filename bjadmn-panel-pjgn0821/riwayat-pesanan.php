@@ -31,24 +31,56 @@ function hitungTotalHarga(string $ukuran, float $hargaPerM2): float {
     return (float)$hargaPerM2;
 }
 
-$dari   = isset($_GET['dari']) ? $_GET['dari'] : '';
-$sampai = isset($_GET['sampai']) ? $_GET['sampai'] : '';
+$dari = isset($_GET['dari']) ? trim($_GET['dari']) : '';
+$sampai = isset($_GET['sampai']) ? trim($_GET['sampai']) : '';
+$cari = isset($_GET['cari']) ? trim($_GET['cari']) : '';
 
-$where = "1=1";
-if ($dari) {
-    $where .= " AND DATE(p.tgl_pesan) >= '" . mysqli_real_escape_string($conn, $dari) . "'";
-}
-if ($sampai) {
-    $where .= " AND DATE(p.tgl_pesan) <= '" . mysqli_real_escape_string($conn, $sampai) . "'";
+$where = [];
+$types = '';
+$params = [];
+
+if ($dari !== '') {
+    $where[] = 'DATE(p.tgl_pesan) >= ?';
+    $types .= 's';
+    $params[] = $dari;
 }
 
-$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
-                              FROM proyek p
-                              LEFT JOIN layanan l ON p.layanan_id = l.id
-                              LEFT JOIN galeri g ON p.galeri_id = g.id
-                              WHERE $where
-                              ORDER BY p.id DESC");
-$total_rows = mysqli_num_rows($list);
+if ($sampai !== '') {
+    $where[] = 'DATE(p.tgl_pesan) <= ?';
+    $types .= 's';
+    $params[] = $sampai;
+}
+
+if ($cari !== '') {
+    $where[] = '(p.nama LIKE ? OR p.hp LIKE ?)';
+    $types .= 'ss';
+
+    $keyword = '%' . $cari . '%';
+    $params[] = $keyword;
+    $params[] = $keyword;
+}
+
+$sql = "SELECT p.*, l.nama AS nama_layanan, g.judul AS nama_model
+        FROM proyek p
+        LEFT JOIN layanan l ON p.layanan_id = l.id
+        LEFT JOIN galeri g ON p.galeri_id = g.id";
+
+if (!empty($where)) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
+}
+
+$sql .= ' ORDER BY p.id DESC';
+
+$stmtList = $conn->prepare($sql);
+
+if ($types !== '') {
+    $stmtList->bind_param($types, ...$params);
+}
+
+$stmtList->execute();
+
+$list = $stmtList->get_result();
+$total_rows = $list->num_rows;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -279,6 +311,38 @@ $total_rows = mysqli_num_rows($list);
             flex-wrap: wrap;
         }
     }
+
+    .search-pesanan-input {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        width: min(260px, 100%);
+        height: 38px;
+        padding: 0 10px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .search-pesanan-input:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-pesanan-input i {
+        color: #94a3b8;
+    }
+
+    .search-pesanan-input input {
+        width: 100%;
+        height: 34px;
+        padding: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #334155;
+        font-size: 0.85rem;
+    }
     </style>
 </head>
 
@@ -290,13 +354,20 @@ $total_rows = mysqli_num_rows($list);
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <label class="fw-semibold text-nowrap" style="font-size:0.83rem; color:#475569">Filter Tanggal
                         Pesan:</label>
+                    <div class="search-pesanan-input">
+                        <i class="bi bi-person-search"></i>
+
+                        <input type="search" name="cari"
+                            value="<?php echo htmlspecialchars($cari, ENT_QUOTES, 'UTF-8'); ?>"
+                            placeholder="Cari nama / no. HP" autocomplete="off">
+                    </div>
                     <input type="date" name="dari" class="form-control" style="max-width:160px"
                         value="<?php echo htmlspecialchars($dari); ?>" placeholder="Dari">
                     <span class="text-muted" style="font-size:0.82rem">s/d</span>
                     <input type="date" name="sampai" class="form-control" style="max-width:160px"
                         value="<?php echo htmlspecialchars($sampai); ?>" placeholder="Sampai">
                     <button type="submit" class="btn-filter"><i class="bi bi-search me-1"></i> Filter</button>
-                    <?php if ($dari || $sampai) { ?>
+                    <?php if ($dari || $sampai || $cari) { ?>
                     <a href="riwayat-pesanan.php" class="btn-reset"><i class="bi bi-x me-1"></i> Reset</a>
                     <?php } ?>
                     <a href="export-pesanan.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>"
@@ -304,16 +375,27 @@ $total_rows = mysqli_num_rows($list);
                         <i class="bi bi-file-earmark-excel"></i> Export Excel
                     </a>
 
-                    <a href="export-pdf.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>"
-                        class="btn-export btn-export-pdf">
+                    <button type="button" id="btnExportPdf" class="btn-export btn-export-pdf"
+                        data-url="export-pdf.php?dari=<?php echo urlencode($dari); ?>&sampai=<?php echo urlencode($sampai); ?>">
                         <i class="bi bi-file-earmark-pdf"></i> Export PDF
-                    </a>
+                    </button>
                 </div>
-                <?php if ($dari || $sampai) { ?>
+                <?php if ($dari || $sampai || $cari) { ?>
                 <p class="result-count mt-2 mb-0">
                     Menampilkan <strong><?php echo $total_rows; ?></strong> pesanan
-                    <?php if ($dari) echo "dari <strong>" . htmlspecialchars($dari) . "</strong>"; ?>
-                    <?php if ($sampai) echo " s/d <strong>" . htmlspecialchars($sampai) . "</strong>"; ?>
+
+                    <?php if ($cari) { ?>
+                    untuk kata kunci
+                    <strong><?php echo htmlspecialchars($cari); ?></strong>
+                    <?php } ?>
+
+                    <?php if ($dari) { ?>
+                    dari <strong><?php echo htmlspecialchars($dari); ?></strong>
+                    <?php } ?>
+
+                    <?php if ($sampai) { ?>
+                    s/d <strong><?php echo htmlspecialchars($sampai); ?></strong>
+                    <?php } ?>
                 </p>
                 <?php } ?>
             </div>
@@ -328,7 +410,7 @@ $total_rows = mysqli_num_rows($list);
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>No</th>
                             <th>Nama</th>
                             <th>HP</th>
                             <th>Layanan</th>
@@ -403,27 +485,113 @@ $total_rows = mysqli_num_rows($list);
         </div>
     </div>
 
+    <div class="modal" id="previewPdfModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" style="height: 90vh; border-radius: 12px;">
+                <div class="modal-header py-2" style="background:#1b4332; color:#fff;">
+                    <h6 class="modal-title mb-0">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Preview Laporan PDF
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="background:#525659; position: relative; overflow:hidden;">
+                    <iframe id="pdfPreviewFrame" src=""
+                        style="width:100%; height:100%; border:none; display:block;"></iframe>
+                    <div id="pdfLoading" class="d-flex align-items-center justify-content-center text-white"
+                        style="position:absolute; inset:0; background:#525659; z-index:5;">
+                        <div class="spinner-border me-2" role="status"></div>
+                        <span>Memuat PDF...</span>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <a id="btnDownloadPdf" href="#" download class="btn btn-success btn-sm">
+                        <i class="bi bi-download me-1"></i> Download
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const modalEl = document.getElementById('previewGambarModal');
-        const modalImg = document.getElementById('previewGambarImg');
-        if (!modalEl || !modalImg) return;
 
-        const modal = new bootstrap.Modal(modalEl);
+        // ---------- Modal Preview Gambar ----------
+        (function() {
+            const modalEl = document.getElementById('previewGambarModal');
+            const modalImg = document.getElementById('previewGambarImg');
+            if (!modalEl || !modalImg || typeof bootstrap === 'undefined') return;
 
-        document.body.addEventListener('click', function(e) {
-            const trigger = e.target.closest('.link-preview-gambar');
-            if (!trigger) return;
+            const modal = new bootstrap.Modal(modalEl);
 
-            e.preventDefault();
-            modalImg.src = trigger.getAttribute('data-img');
-            modal.show();
-        });
+            document.body.addEventListener('click', function(e) {
+                const trigger = e.target.closest('.link-preview-gambar');
+                if (!trigger) return;
+                e.preventDefault();
+                modalImg.src = trigger.getAttribute('data-img');
+                modal.show();
+            });
 
-        modalEl.addEventListener('hidden.bs.modal', function() {
-            modalImg.src = '';
-        });
+            modalEl.addEventListener('hidden.bs.modal', function() {
+                modalImg.src = '';
+            });
+        })();
+
+        // ---------- Modal Preview PDF ----------
+        (function() {
+            const btnExportPdf = document.getElementById('btnExportPdf');
+            const pdfModalEl = document.getElementById('previewPdfModal');
+            const pdfFrame = document.getElementById('pdfPreviewFrame');
+            const pdfLoading = document.getElementById('pdfLoading');
+            const btnDownloadPdf = document.getElementById('btnDownloadPdf');
+
+            if (!btnExportPdf || !pdfModalEl || !pdfFrame || typeof bootstrap === 'undefined') {
+                console.warn('[PDF] Elemen tidak lengkap.');
+                return;
+            }
+
+            const pdfModal = new bootstrap.Modal(pdfModalEl, {
+                focus: false
+            });
+            let hideTimer = null;
+
+            btnExportPdf.addEventListener('click', function() {
+                const url = btnExportPdf.getAttribute('data-url');
+
+                clearTimeout(hideTimer);
+
+                if (pdfLoading) {
+                    pdfLoading.style.opacity = '1';
+                    pdfLoading.style.pointerEvents = 'auto';
+                }
+                if (btnDownloadPdf) btnDownloadPdf.setAttribute('href', url);
+
+                pdfFrame.src = url;
+                pdfModal.show();
+
+                // TIDAK menunggu event 'load' sama sekali (terbukti tidak reliable
+                // untuk PDF native viewer). Overlay otomatis pudar setelah 800ms,
+                // cukup untuk PDF lokal yang sudah terbukti render cepat.
+                hideTimer = setTimeout(function() {
+                    if (pdfLoading) {
+                        pdfLoading.style.opacity = '0';
+                        pdfLoading.style.pointerEvents = 'none';
+                    }
+                }, 800);
+            });
+
+            pdfModalEl.addEventListener('hidden.bs.modal', function() {
+                clearTimeout(hideTimer);
+                pdfFrame.src = '';
+                if (pdfLoading) {
+                    pdfLoading.style.opacity = '1';
+                    pdfLoading.style.pointerEvents = 'auto';
+                }
+                btnExportPdf.focus();
+            });
+        })();
     });
     </script>
 </body>

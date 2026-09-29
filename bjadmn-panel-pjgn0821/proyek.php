@@ -14,13 +14,58 @@ function linkify(string $text): string {
     }, $textEscaped);
 }
 
-$list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
-                                    g.judul AS nama_model,
-                                    g.harga AS harga_galeri
-                             FROM proyek p
-                             LEFT JOIN layanan l ON p.layanan_id = l.id
-                             LEFT JOIN galeri g ON p.galeri_id = g.id
-                             ORDER BY p.status='baru' DESC, p.id DESC");
+function ambilReferensiProyek(mysqli $conn, int $proyek_id): array
+{
+    $referensi = [];
+
+    $stmt = $conn->prepare(
+        'SELECT foto
+         FROM proyek_referensi
+         WHERE proyek_id = ?
+         ORDER BY id ASC'
+    );
+
+    if (!$stmt) {
+        return $referensi;
+    }
+
+    $stmt->bind_param('i', $proyek_id);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $referensi[] = $row['foto'];
+    }
+
+    $stmt->close();
+
+    return $referensi;
+}
+$cari = trim($_GET['cari'] ?? '');
+
+$sql = "SELECT p.*, l.nama AS nama_layanan,
+               g.judul AS nama_model,
+               g.harga AS harga_galeri
+        FROM proyek p
+        LEFT JOIN layanan l ON p.layanan_id = l.id
+        LEFT JOIN galeri g ON p.galeri_id = g.id";
+
+if ($cari !== '') {
+    $sql .= " WHERE p.nama LIKE ? OR p.hp LIKE ?";
+}
+
+$sql .= " ORDER BY p.status='baru' DESC, p.id DESC";
+
+$stmtList = $conn->prepare($sql);
+
+if ($cari !== '') {
+    $keyword = '%' . $cari . '%';
+    $stmtList->bind_param('ss', $keyword, $keyword);
+}
+
+$stmtList->execute();
+$list = $stmtList->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -295,6 +340,110 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
             white-space: normal;
         }
     }
+
+    .referensi-upload-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .referensi-thumb {
+        width: 58px;
+        height: 48px;
+        padding: 0;
+        border: 1px solid #dbe3ef;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #f8fafc;
+        cursor: pointer;
+    }
+
+    .referensi-thumb img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .referensi-thumb:hover {
+        border-color: #2563eb;
+    }
+
+    .filter-pesanan {
+        padding: 12px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        background: #fff;
+    }
+
+    .filter-pesanan-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-pesanan-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: min(360px, 100%);
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0 11px;
+        background: #fff;
+    }
+
+    .filter-pesanan-input:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .filter-pesanan-input i {
+        color: #94a3b8;
+    }
+
+    .filter-pesanan-input input {
+        width: 100%;
+        height: 36px;
+        border: 0;
+        outline: 0;
+        font-size: 0.84rem;
+        color: #334155;
+        background: transparent;
+    }
+
+    .btn-cari-pesanan,
+    .btn-reset-cari {
+        height: 36px;
+        padding: 0 14px;
+        border-radius: 7px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .btn-cari-pesanan {
+        border: 0;
+        color: #fff;
+        background: #2563eb;
+    }
+
+    .btn-cari-pesanan:hover {
+        background: #1d4ed8;
+    }
+
+    .btn-reset-cari {
+        display: inline-flex;
+        align-items: center;
+        color: #475569;
+        background: #f1f5f9;
+    }
+
+    .btn-reset-cari:hover {
+        color: #1e293b;
+        background: #e2e8f0;
+    }
     </style>
 </head>
 
@@ -309,6 +458,28 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
                     <i class="bi bi-plus-lg"></i> Tambah
                 </a>
             </div>
+
+            <form method="get" action="proyek.php" class="filter-pesanan">
+                <div class="filter-pesanan-wrap">
+                    <div class="filter-pesanan-input">
+                        <i class="bi bi-search"></i>
+
+                        <input type="search" name="cari"
+                            value="<?php echo htmlspecialchars($cari, ENT_QUOTES, 'UTF-8'); ?>"
+                            placeholder="Cari nama pelanggan atau nomor HP..." autocomplete="off">
+                    </div>
+
+                    <button type="submit" class="btn-cari-pesanan">
+                        Cari
+                    </button>
+
+                    <?php if ($cari !== ''): ?>
+                    <a href="proyek.php" class="btn-reset-cari">
+                        Reset
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </form>
 
             <div class="table-scroll">
                 <table class="table table-hover mb-0">
@@ -333,6 +504,7 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
                         <?php
                         $no = 1;
                         while ($p = mysqli_fetch_assoc($list)) {
+                            $referensi = ambilReferensiProyek($conn, $p['id']);
                             $status = strtolower($p['status']);
                             $badge = match ($status) {
                                 'baru' => 'badge-baru',
@@ -379,6 +551,20 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
                                     <button type="button" class="btn-expand"
                                         onclick="toggleExpand('cat-<?php echo $p['id']; ?>', this)">Lihat semua</button>
                                     <?php } ?>
+                                    <?php if (!empty($referensi)): ?>
+                                    <div class="referensi-upload-grid">
+                                        <?php foreach ($referensi as $foto): ?>
+                                        <?php $srcFoto = '../' . ltrim($foto, '/'); ?>
+
+                                        <button type="button" class="referensi-thumb"
+                                            data-img="<?php echo htmlspecialchars($srcFoto, ENT_QUOTES, 'UTF-8'); ?>"
+                                            title="Lihat gambar referensi">
+                                            <img src="<?php echo htmlspecialchars($srcFoto, ENT_QUOTES, 'UTF-8'); ?>"
+                                                alt="Gambar referensi pelanggan">
+                                        </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <input type="text" name="ukuran" class="form-control form-control-sm ukuran-input"
@@ -402,7 +588,13 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
                                 </td>
                                 <td class="text-muted"><?php echo htmlspecialchars($p['tgl_pesan']); ?></td>
                                 <td class="text-muted">
-                                    <?php echo $p['tgl_selesai'] ? htmlspecialchars($p['tgl_selesai']) : '-'; ?>
+                                    <?php
+    $tglSelesai = $p['tgl_selesai'] ?? null;
+
+    echo (!empty($tglSelesai) && $tglSelesai !== '0000-00-00 00:00:00')
+        ? htmlspecialchars($tglSelesai)
+        : '-';
+    ?>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1" style="width:80px">
@@ -437,6 +629,7 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3"
                         data-bs-dismiss="modal" aria-label="Close"
                         style="background-color:rgba(0,0,0,.6);border-radius:50%;opacity:1;padding:10px;width:34px;height:34px"></button>
+
                     <img id="previewGambarImg" src="" alt="Preview gambar"
                         style="width:100%;max-height:80vh;object-fit:contain;border-radius:12px;background:#000">
                 </div>
@@ -445,62 +638,105 @@ $list = mysqli_query($conn, "SELECT p.*, l.nama AS nama_layanan,
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
     function toggleExpand(id, btn) {
         const el = document.getElementById(id);
         const expanded = el.classList.toggle('expanded');
-        btn.textContent = expanded ? 'Sembunyikan' : 'Lihat semua';
+
+        btn.textContent = expanded ?
+            'Sembunyikan' :
+            'Lihat semua';
     }
 
     function parseUkuran(value) {
-        const match = String(value).toLowerCase().replace(',', '.').match(
-            /^\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1]) * parseFloat(match[2]) : null;
+        const match = String(value)
+            .toLowerCase()
+            .replace(',', '.')
+            .match(/^\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/);
+
+        return match ?
+            parseFloat(match[1]) * parseFloat(match[2]) :
+            null;
     }
 
     function hitungTotal(inputUkuran) {
         const luas = parseUkuran(inputUkuran.value);
-        const hargaInput = document.getElementById(inputUkuran.dataset.hargaInput);
-        const totalHint = document.getElementById('total-' + inputUkuran.dataset.hargaInput.replace('harga-', ''));
-        const harga = hargaInput ? parseFloat(hargaInput.value) || 0 : 0;
+
+        const hargaInput = document.getElementById(
+            inputUkuran.dataset.hargaInput
+        );
+
+        const totalHint = document.getElementById(
+            'total-' +
+            inputUkuran.dataset.hargaInput.replace('harga-', '')
+        );
+
+        const harga = hargaInput ?
+            parseFloat(hargaInput.value) || 0 :
+            0;
 
         if (luas && harga > 0) {
-            totalHint.textContent = luas.toLocaleString('id-ID') + ' m² = Rp ' + (luas * harga).toLocaleString('id-ID');
+            totalHint.textContent =
+                luas.toLocaleString('id-ID') +
+                ' m² = Rp ' +
+                (luas * harga).toLocaleString('id-ID');
         } else {
             totalHint.textContent = '';
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Hitung total harga dari ukuran × harga per m²
         document.querySelectorAll('.ukuran-input').forEach(function(input) {
             input.addEventListener('input', function() {
                 hitungTotal(input);
             });
+
             hitungTotal(input);
         });
 
         document.querySelectorAll('.harga-input').forEach(function(input) {
             input.addEventListener('input', function() {
-                const ukuran = document.querySelector('[data-harga-input="' + input.id + '"]');
-                if (ukuran) hitungTotal(ukuran);
+                const ukuran = document.querySelector(
+                    '[data-harga-input="' + input.id + '"]'
+                );
+
+                if (ukuran) {
+                    hitungTotal(ukuran);
+                }
             });
         });
 
-        const modalEl = document.getElementById('previewGambarModal');
-        const modalImg = document.getElementById('previewGambarImg');
-        if (modalEl && modalImg) {
-            const modal = new bootstrap.Modal(modalEl);
-            document.body.addEventListener('click', function(e) {
-                const trigger = e.target.closest('.link-preview-gambar');
-                if (!trigger) return;
-                e.preventDefault();
-                modalImg.src = trigger.getAttribute('data-img');
-                modal.show();
-            });
-            modalEl.addEventListener('hidden.bs.modal', function() {
-                modalImg.src = '';
-            });
+        // Modal dipakai untuk link gambar pada catatan
+        // sekaligus thumbnail foto upload pelanggan.
+        const modalElement = document.getElementById('previewGambarModal');
+        const modalImage = document.getElementById('previewGambarImg');
+
+        if (!modalElement || !modalImage || !window.bootstrap) {
+            return;
         }
+
+        const modal = new bootstrap.Modal(modalElement);
+
+        document.body.addEventListener('click', function(event) {
+            const trigger = event.target.closest(
+                '.link-preview-gambar, .referensi-thumb'
+            );
+
+            if (!trigger) {
+                return;
+            }
+
+            event.preventDefault();
+
+            modalImage.src = trigger.getAttribute('data-img') || '';
+            modal.show();
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            modalImage.removeAttribute('src');
+        });
     });
     </script>
 </body>

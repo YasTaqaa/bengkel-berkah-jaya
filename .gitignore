@@ -1,8 +1,11 @@
 config.php
+config-cloudinary.php
+upload-cloudinary.php
 vendor/
 assets/img/galeri/
 assets/img/layanan/
 assets/img/tim/
+assets/img/referensi-pesanan
 .DS_Store
 Thumbs.db
 STRUCTURE.md

@@ -13,9 +13,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_db'])) {
 
     $sql = "INSERT INTO proyek (nama, hp, layanan_id, galeri_id, lokasi, ukuran, harga, catatan)
             VALUES ('$nama', '$hp', $layanan_id, $galeri_value, '$lokasi', '', 0, '$catatan')";
-    mysqli_query($conn, $sql);
-    header("Location: terima-kasih.php");
+    if (mysqli_query($conn, $sql)) {
+        $proyek_id = mysqli_insert_id($conn);
+
+    if (!empty($_FILES['referensi']['name'][0])) {
+        $folder = __DIR__ . '/assets/img/referensi-pesanan/';
+
+        if (!is_dir($folder)) {
+            mkdir($folder, 0755, true);
+        }
+
+        $allowed = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp'
+        ];
+
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $jumlah = min(count($_FILES['referensi']['name']), 3);
+
+        for ($i = 0; $i < $jumlah; $i++) {
+            if ($_FILES['referensi']['error'][$i] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            if ((int)$_FILES['referensi']['size'][$i] > 3 * 1024 * 1024) {
+                continue;
+            }
+
+            $tmp = $_FILES['referensi']['tmp_name'][$i];
+            $mime = $finfo->file($tmp);
+
+            if (!isset($allowed[$mime])) {
+                continue;
+            }
+
+            $namaFile = 'ref_' . $proyek_id . '_' . bin2hex(random_bytes(8)) . '.' . $allowed[$mime];
+            $tujuan = $folder . $namaFile;
+
+            if (move_uploaded_file($tmp, $tujuan)) {
+                $foto = 'assets/img/referensi-pesanan/' . $namaFile;
+                $stmtFoto = $conn->prepare(
+                    'INSERT INTO proyek_referensi (proyek_id, foto) VALUES (?, ?)'
+                );
+                $stmtFoto->bind_param('is', $proyek_id, $foto);
+                $stmtFoto->execute();
+            }
+        }
+    }
+
+    header('Location: terima-kasih.php');
     exit;
+}
 }
 
 // Data galeri untuk dirender jadi kartu pilihan model di JS main.js
@@ -69,7 +118,7 @@ while ($l = mysqli_fetch_assoc($qLayanan)) {
         <div class="container">
             <div class="page-header-inner">
                 <span class="section-label-light">Gratis Survey Area Kebumen</span>
-                <h1 class="page-header-title">Form Pemesanan Survey</h1>
+                <h1 class="page-header-title">Form Pemesanan</h1>
                 <p class="page-header-desc">Isi form di bawah, kami akan menghubungi Anda untuk konfirmasi jadwal
                     survey.</p>
             </div>
@@ -81,7 +130,7 @@ while ($l = mysqli_fetch_assoc($qLayanan)) {
             <div class="row justify-content-center">
                 <div class="col-md-7 reveal">
                     <div class="form-card">
-                        <form method="post" action="">
+                        <form method="post" action="" enctype="multipart/form-data">
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">
                                     <i class="bi bi-person me-2 text-primary"></i>Nama Lengkap
@@ -172,6 +221,23 @@ while ($l = mysqli_fetch_assoc($qLayanan)) {
                                     placeholder="Tulis detail pesanan di sini, misalnya warna, ukuran, model, atau link contoh desain jika ada."></textarea>
                             </div>
 
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-upload me-2 text-primary"></i>
+                                    Upload Foto Referensi
+                                    <span class="text-muted fw-normal">(opsional)</span>
+                                </label>
+
+                                <input type="file" name="referensi[]" id="inputReferensi" class="form-control"
+                                    accept="image/jpeg,image/png,image/webp" multiple>
+
+                                <div class="referensi-help">
+                                    Maksimal ukuran gambar 3MB. JPG, PNG, atau WebP.
+                                </div>
+
+                                <div id="referensiPreview" class="referensi-preview"></div>
+                            </div>
+
                             <div class="d-grid">
                                 <button type="submit" name="simpan_db" class="btn-submit">
                                     <i class="bi bi-send"></i> Kirim
@@ -190,15 +256,17 @@ while ($l = mysqli_fetch_assoc($qLayanan)) {
                             <li><i class="bi bi-check-circle-fill"></i> Pengerjaan tepat waktu</li>
                             <li><i class="bi bi-check-circle-fill"></i> Bergaransi</li>
                             <li><i class="bi bi-check-circle-fill"></i> Tim berpengalaman 10 tahun</li>
+                            <div class="pesan-info-contact">
+                                <p class="mb-2"><i class="bi bi-whatsapp me-2"></i>+62 812-3456-7890</p>
+                                <p class="mb-2"><i class="bi bi-clock me-2"></i>Senin-Sabtu, 08.00-17.00</p>
+                                <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>Pejagoan, Kebumen</p>
+                            </div>
                         </ul>
                     </div>
-                    <div class="pesan-info-contact">
-                        <p class="mb-2"><i class="bi bi-whatsapp me-2"></i>+62 812-3456-7890</p>
-                        <p class="mb-2"><i class="bi bi-clock me-2"></i>Senin-Sabtu, 08.00-17.00</p>
-                        <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>Pejagoan, Kebumen</p>
-                    </div>
+
                 </div>
             </div>
+        </div>
         </div>
     </section>
 
