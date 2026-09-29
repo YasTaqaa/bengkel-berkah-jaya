@@ -82,6 +82,23 @@ if ($cari !== '') {
 
 $stmtList->execute();
 $list = $stmtList->get_result();
+
+$fotoTambahan = [];
+
+$stmtSemuaFoto = $conn->prepare(
+    "SELECT galeri_id, foto
+     FROM galeri_foto
+     ORDER BY urutan ASC, id ASC"
+);
+
+$stmtSemuaFoto->execute();
+$resSemuaFoto = $stmtSemuaFoto->get_result();
+
+while ($fotoRow = $resSemuaFoto->fetch_assoc()) {
+    $fotoTambahan[(int) $fotoRow['galeri_id']][] = $fotoRow['foto'];
+}
+
+$stmtSemuaFoto->close();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -334,15 +351,48 @@ $list = $stmtList->get_result();
                     </thead>
                     <tbody>
                         <?php $no=1; while ($g = $list->fetch_assoc()): ?>
-                        <?php $src = '../assets/img/galeri/' . htmlspecialchars($g['foto'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                        <?php
+$idGaleri = (int) $g['id'];
+$daftarFoto = [];
+
+/* Foto utama dari tabel galeri */
+if (!empty($g['foto'])) {
+    $daftarFoto[] = $g['foto'];
+}
+
+/* Foto tambahan dari tabel galeri_foto */
+if (!empty($fotoTambahan[$idGaleri])) {
+    $daftarFoto = array_merge($daftarFoto, $fotoTambahan[$idGaleri]);
+}
+
+/* Hilangkan data kosong dan foto yang dobel */
+$daftarFoto = array_values(array_unique(array_filter($daftarFoto)));
+
+/* Ubah nama file menjadi path URL untuk browser */
+$urlFoto = array_map(function ($foto) {
+    $namaFile = basename(str_replace('\\', '/', $foto));
+    return '../assets/img/galeri/' . rawurlencode($namaFile);
+}, $daftarFoto);
+
+$fotoUtama = $urlFoto[0] ?? '';
+$jsonFoto = json_encode($urlFoto, JSON_UNESCAPED_SLASHES);
+?>
+
                         <tr>
                             <td class="text-muted"><?= $no++ ?></td>
                             <td>
-                                <?php if (!empty($g['foto'])): ?>
-                                <button type="button" class="foto-thumbnail" data-img="<?= $src ?>"
-                                    data-title="<?= htmlspecialchars($g['judul'], ENT_QUOTES, 'UTF-8') ?>"><img
-                                        src="<?= $src ?>" alt="<?= htmlspecialchars($g['judul']) ?>"></button>
-                                <?php else: ?><span class="text-muted">-</span><?php endif; ?>
+                                <?php if ($fotoUtama !== ''): ?>
+                                <button type="button" class="foto-thumbnail"
+                                    data-fotos="<?= htmlspecialchars($jsonFoto, ENT_QUOTES, 'UTF-8') ?>"
+                                    data-title="<?= htmlspecialchars($g['judul'], ENT_QUOTES, 'UTF-8') ?>"
+                                    title="Klik untuk melihat <?= count($urlFoto) ?> foto">
+
+                                    <img src="<?= htmlspecialchars($fotoUtama, ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="<?= htmlspecialchars($g['judul'], ENT_QUOTES, 'UTF-8') ?>">
+                                </button>
+                                <?php else: ?>
+                                <span class="text-muted">-</span>
+                                <?php endif; ?>
                             </td>
                             <td><strong><?= htmlspecialchars($g['judul']) ?></strong></td>
                             <td><?= htmlspecialchars($g['nama_layanan'] ?? '-') ?></td>
@@ -374,8 +424,13 @@ $list = $stmtList->get_result();
                     <h5 id="adminFotoTitle" class="modal-title text-white"></h5><button type="button"
                         class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-center"><img id="adminFotoPreview" src="" alt="" class="img-fluid"
-                        style="max-height:75vh;object-fit:contain"></div>
+                <div class="modal-body text-center">
+                    <img id="adminFotoPreview" src="" alt="" class="img-fluid"
+                        style="max-height:65vh; object-fit:contain;">
+
+                    <div id="adminFotoThumbs" class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -384,19 +439,84 @@ $list = $stmtList->get_result();
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('adminFotoModal');
-        const image = document.getElementById('adminFotoPreview');
+        const preview = document.getElementById('adminFotoPreview');
         const title = document.getElementById('adminFotoTitle');
-        if (!modalEl || !image || !window.bootstrap) return;
+        const thumbs = document.getElementById('adminFotoThumbs');
+
+        if (!modalEl || !preview || !title || !thumbs || !window.bootstrap) {
+            return;
+        }
+
         const modal = new bootstrap.Modal(modalEl);
+
+        function pilihFoto(url, tombolAktif) {
+            preview.src = url;
+
+            thumbs.querySelectorAll('.modal-foto-thumb').forEach(function(button) {
+                button.classList.remove('border-primary', 'border-3');
+                button.classList.add('border-transparent');
+            });
+
+            if (tombolAktif) {
+                tombolAktif.classList.remove('border-transparent');
+                tombolAktif.classList.add('border-primary', 'border-3');
+            }
+        }
+
         document.querySelectorAll('.foto-thumbnail').forEach(function(button) {
             button.addEventListener('click', function() {
-                image.src = button.dataset.img || '';
+                let fotoList = [];
+
+                try {
+                    fotoList = JSON.parse(button.dataset.fotos || '[]');
+                } catch (error) {
+                    fotoList = [];
+                }
+
                 title.textContent = button.dataset.title || 'Preview gambar';
+                thumbs.innerHTML = '';
+
+                if (!fotoList.length) {
+                    preview.removeAttribute('src');
+                    modal.show();
+                    return;
+                }
+
+                fotoList.forEach(function(url, index) {
+                    const thumbButton = document.createElement('button');
+                    const thumbImage = document.createElement('img');
+
+                    thumbButton.type = 'button';
+                    thumbButton.className =
+                        'modal-foto-thumb border border-3 border-transparent rounded p-0 bg-transparent';
+
+                    thumbImage.src = url;
+                    thumbImage.alt = 'Foto ' + (index + 1);
+                    thumbImage.style.width = '72px';
+                    thumbImage.style.height = '54px';
+                    thumbImage.style.objectFit = 'cover';
+                    thumbImage.style.borderRadius = '4px';
+
+                    thumbButton.appendChild(thumbImage);
+
+                    thumbButton.addEventListener('click', function() {
+                        pilihFoto(url, thumbButton);
+                    });
+
+                    thumbs.appendChild(thumbButton);
+
+                    if (index === 0) {
+                        pilihFoto(url, thumbButton);
+                    }
+                });
+
                 modal.show();
             });
         });
+
         modalEl.addEventListener('hidden.bs.modal', function() {
-            image.removeAttribute('src');
+            preview.removeAttribute('src');
+            thumbs.innerHTML = '';
         });
     });
     </script>
