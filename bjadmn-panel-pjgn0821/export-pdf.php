@@ -190,7 +190,7 @@ $html .= '</tbody>
 </div>
 
 <div class="footer-doc">
-    Dokumen ini dicetak otomatis oleh sistem Bengkel Las Berkah Jaya dan sah tanpa cap basah selama terdapat tanda tangan admin.
+    Dokumen ini dicetak otomatis oleh sistem Bengkel Las Berkah Jaya.
 </div>
 
 </body>

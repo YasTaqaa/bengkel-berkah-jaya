@@ -352,8 +352,6 @@ $total_rows = $list->num_rows;
         <form method="GET" action="">
             <div class="filter-bar">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <label class="fw-semibold text-nowrap" style="font-size:0.83rem; color:#475569">Filter Tanggal
-                        Pesan:</label>
                     <div class="search-pesanan-input">
                         <i class="bi bi-person-search"></i>
 
