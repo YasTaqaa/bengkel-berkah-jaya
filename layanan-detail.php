@@ -83,11 +83,12 @@ foreach ($deskripsiLines as $line) {
                 <div class="col-md-7">
                     <div class="detail-card">
                         <h2 class="detail-title"><?php echo htmlspecialchars($layanan['nama']); ?></h2>
+                        <?php if (trim((string)($layanan['harga'] ?? '')) !== ''): ?>
                         <div class="detail-harga">
                             <i class="bi bi-tag-fill me-2"></i>
-                            Mulai Rp <?php echo number_format($layanan['harga'], 0, ',', '.'); ?>
-                            <span class="detail-harga-satuan">/m<sup>2</sup></span>
+                            <?php echo htmlspecialchars($layanan['harga'], ENT_QUOTES, 'UTF-8'); ?>
                         </div>
+                        <?php endif; ?>
 
                         <?php if ($ringkasan) { ?>
                         <p class="detail-desc"><?php echo htmlspecialchars($ringkasan); ?></p>
@@ -135,16 +136,20 @@ foreach ($deskripsiLines as $line) {
                                 <?php while ($e = mysqli_fetch_assoc($qEstimasi)) { ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($e['ukuran_model']); ?></td>
-                                    <td>Rp <?php echo number_format($e['estimasi_harga'], 0, ',', '.'); ?>
-                                        <sup>/m2</sup>
+                                    <td>
+                                        <?php echo htmlspecialchars($e['estimasi_harga'], ENT_QUOTES, 'UTF-8'); ?>
                                     </td>
                                 </tr>
                                 <?php } ?>
                                 <?php } else { ?>
                                 <tr>
-                                    <td>Model standar, ukuran kecil</td>
-                                    <td>Mulai Rp <?php echo number_format($layanan['harga'], 0, ',', '.'); ?>
-                                        <sup>/m2</sup>
+                                    <td>Harga layanan</td>
+                                    <td>
+                                        <?php
+        echo !empty($layanan['harga'])
+            ? htmlspecialchars($layanan['harga'], ENT_QUOTES, 'UTF-8')
+            : 'Harga menyesuaikan kebutuhan';
+        ?>
                                     </td>
                                 </tr>
                                 <?php } ?>
@@ -239,17 +244,17 @@ foreach ($deskripsiLines as $line) {
                                 <?php echo htmlspecialchars($g['judul']); ?>
                             </h5>
 
-                            <?php if (isset($g['harga']) && (float)$g['harga'] > 0) { ?>
+                            <?php if (trim((string)($g['harga'] ?? '')) !== ''): ?>
                             <div class="galeri-card-price">
                                 <i class="bi bi-tag-fill me-1"></i>
-                                Rp <?php echo number_format((float)$g['harga'], 0, ',', '.'); ?> /m²
+                                <?php echo htmlspecialchars($g['harga'], ENT_QUOTES, 'UTF-8'); ?>
                             </div>
-                            <?php } else { ?>
+                            <?php else: ?>
                             <div class="galeri-card-price galeri-card-price-empty">
                                 <i class="bi bi-info-circle me-1"></i>
-                                Harga menyesuaikan ukuran
+                                Harga menyesuaikan kebutuhan
                             </div>
-                            <?php } ?>
+                            <?php endif; ?>
 
                             <p class="card-text text-muted">
                                 <?php echo nl2br(htmlspecialchars($g['keterangan'])); ?>

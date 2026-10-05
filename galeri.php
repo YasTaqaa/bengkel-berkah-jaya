@@ -78,15 +78,15 @@ require_once __DIR__ . "/config.php";
                                 <?php echo htmlspecialchars($g['judul']); ?>
                             </h5>
 
-                            <?php if (isset($g['harga']) && (float)$g['harga'] > 0): ?>
+                            <?php if (trim((string)($g['harga'] ?? '')) !== ''): ?>
                             <div class="galeri-card-price">
                                 <i class="bi bi-tag-fill me-1"></i>
-                                Rp <?php echo number_format((float)$g['harga'], 0, ',', '.'); ?> /m²
+                                <?php echo htmlspecialchars($g['harga'], ENT_QUOTES, 'UTF-8'); ?>
                             </div>
                             <?php else: ?>
                             <div class="galeri-card-price galeri-card-price-empty">
                                 <i class="bi bi-info-circle me-1"></i>
-                                Harga menyesuaikan ukuran
+                                Harga menyesuaikan kebutuhan
                             </div>
                             <?php endif; ?>
 

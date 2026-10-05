@@ -493,7 +493,7 @@ $list = $stmtList->get_result();
                             <th>Lokasi</th>
                             <th>Catatan</th>
                             <th>Ukuran</th>
-                            <th>Harga / m²</th>
+                            <th>Harga</th>
                             <th>Status</th>
                             <th>Tgl Pesan</th>
                             <th>Tgl Selesai</th>

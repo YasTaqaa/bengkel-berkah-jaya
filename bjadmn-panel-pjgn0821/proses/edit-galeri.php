@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     $layanan_id  = ($_POST['layanan_id'] != '') ? (int)$_POST['layanan_id'] : null;
     $keterangan  = input_filter($conn, $_POST['keterangan']);
     $tgl_selesai = input_filter($conn, $_POST['tgl_selesai']);
-    $harga       = !empty($_POST['harga']) ? (int)$_POST['harga'] : null;
+    $harga = input_filter($conn, $_POST['harga'] ?? '');
     $hapusFotoIds = $_POST['hapus_foto'] ?? [];
 
     require_once __DIR__ . "/upload-helper.php";
@@ -96,7 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         }
     }
 
-    if (empty($error)) {
+    if (empty($error) && $jumlahSaatIni < 1) {
+    $error = "Minimal harus ada satu foto proyek. Upload foto baru jika semua foto lama dihapus.";
+}
+
+if (empty($error)) {
         // 3. Perbarui thumbnail utama (galeri.foto) supaya selalu ikut foto pertama yang masih ada
         $qUtama = $conn->prepare("SELECT foto FROM galeri_foto WHERE galeri_id=? ORDER BY urutan ASC, id ASC LIMIT 1");
         $qUtama->bind_param("i", $id);
@@ -104,9 +108,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         $utamaRow = $qUtama->get_result()->fetch_assoc();
         $fotoUtama = $utamaRow ? $utamaRow['foto'] : $data['foto'];
 
-        $stmt = $conn->prepare("UPDATE galeri SET judul=?, layanan_id=?, keterangan=?, tgl_selesai=?, foto=?, harga=? WHERE id=?");
-        $stmt->bind_param("sisssii", $judul, $layanan_id, $keterangan, $tgl_selesai, $fotoUtama, $harga, $id);
-        $stmt->execute();
+        $stmt = $conn->prepare("
+    UPDATE galeri 
+    SET judul = ?, layanan_id = ?, keterangan = ?, tgl_selesai = ?, foto = ?, harga = ?
+    WHERE id = ?
+");
+
+$stmt->bind_param(
+    "sissssi",
+    $judul,
+    $layanan_id,
+    $keterangan,
+    $tgl_selesai,
+    $fotoUtama,
+    $harga,
+    $id
+);
+
+$stmt->execute();
 
         header("Location: ../galeri.php");
         exit;
@@ -319,11 +338,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Harga Khusus untuk Model Ini (Rp / m&sup2;)</label>
-                    <input type="number" name="harga" class="form-control" min="0"
+                    <label class="form-label">Keterangan Harga Model</label>
+
+                    <input type="text" name="harga" class="form-control" placeholder="Contoh: Rp 4.000.000 per paket"
                         value="<?php echo htmlspecialchars($data['harga'] ?? ''); ?>">
-                    <div class="harga-hint"><i class="bi bi-lightbulb me-1"></i>Opsional. Isi angka saja, contoh
-                        <code>450000</code>.</div>
+
+                    <div class="harga-hint">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Opsional. Tulis harga sesuai model, misalnya “Rp 4.000.000 per paket”,
+                        “Rp 750.000 per unit”, “Mulai Rp 2.500.000”, atau “Hubungi kami untuk harga”.
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -392,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         }
 
         files.forEach(function(file) {
-            const reader = new FileReader();
+            const reader = new window.FileReader();
             reader.onload = function(e) {
                 const item = document.createElement('div');
                 item.className = 'foto-preview-item';

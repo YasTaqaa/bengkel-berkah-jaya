@@ -96,6 +96,21 @@ $list = mysqli_query($conn, "SELECT * FROM layanan ORDER BY urutan ASC, id ASC")
         object-fit: cover;
     }
 
+    .kolom-harga {
+        width: 190px;
+        min-width: 190px;
+    }
+
+    .harga-layanan {
+        display: inline-block;
+        max-width: 180px;
+        color: #1d4ed8;
+        font-weight: 700;
+        line-height: 1.35;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
     .btn-edit {
         font-size: 0.78rem;
         font-weight: 600;
@@ -202,7 +217,15 @@ $list = mysqli_query($conn, "SELECT * FROM layanan ORDER BY urutan ASC, id ASC")
                                 <?php } ?>
                             </td>
                             <td><strong><?php echo htmlspecialchars($l['nama']); ?></strong></td>
-                            <td>Rp <?php echo number_format($l['harga'],0,',','.'); ?></td>
+                            <td class="kolom-harga">
+                                <?php if (trim((string)($l['harga'] ?? '')) !== '') { ?>
+                                <span class="harga-layanan">
+                                    <?php echo htmlspecialchars($l['harga'], ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                                <?php } else { ?>
+                                <span class="text-muted">-</span>
+                                <?php } ?>
+                            </td>
                             <td class="text-muted" style="max-width:220px;">
                                 <?php echo htmlspecialchars(mb_strimwidth($l['deskripsi'], 0, 60, '...')); ?>
                             </td>

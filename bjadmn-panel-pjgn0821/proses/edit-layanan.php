@@ -35,7 +35,7 @@ if ($data) {
 // ============================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     $nama      = input_filter($conn, $_POST['nama']);
-    $harga     = (float)$_POST['harga'];
+    $harga     = input_filter($conn, $_POST['harga'] ?? '');
     $deskripsi = input_filter($conn, $_POST['deskripsi']);
     $urutan    = (int)$_POST['urutan'];
     $nama_file = $data['foto'];
@@ -58,9 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 
     if (empty($error)) {
         // 1. Update data utama layanan
-        $stmt = $conn->prepare("UPDATE layanan SET nama=?, harga=?, deskripsi=?, urutan=?, foto=? WHERE id=?");
-        $stmt->bind_param("sdsssi", $nama, $harga, $deskripsi, $urutan, $nama_file, $id);
-        $stmt->execute();
+        $stmt = $conn->prepare("
+    UPDATE layanan
+    SET nama = ?, harga = ?, deskripsi = ?, urutan = ?, foto = ?
+    WHERE id = ?
+");
+
+$stmt->bind_param(
+    "sssisi",
+    $nama,
+    $harga,
+    $deskripsi,
+    $urutan,
+    $nama_file,
+    $id
+);
+
+$stmt->execute();
 
         // 2. Update baris estimasi: hapus semua baris lama, lalu insert ulang yang baru
         $del = $conn->prepare("DELETE FROM layanan_estimasi WHERE layanan_id = ?");
@@ -298,11 +312,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Harga Mulai (Rp / m&sup2;)</label>
-                    <input type="number" name="harga" class="form-control" min="0"
+                    <label class="form-label">Keterangan Harga</label>
+
+                    <input type="text" name="harga" class="form-control"
+                        placeholder="Contoh: Mulai Rp 4.000.000 per paket"
                         value="<?php echo htmlspecialchars($_POST['harga'] ?? $data['harga']); ?>" required>
-                    <small class="text-muted">Ini yang tampil sebagai "Mulai Rp ... /m&sup2;" di halaman detail
-                        layanan.</small>
+
+                    <small class="text-muted">
+                        Tulis harga sesuai layanan, misalnya
+                        <code>4000000</code>, atau
+                        <code>Menyesuaikan kebutuhan</code>.
+                    </small>
                 </div>
 
                 <div class="mb-3">
@@ -373,7 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
             '<input type="text" name="ukuran_model[]" class="form-control form-control-sm" ' +
             'placeholder="Contoh: Model standar, ukuran kecil" value="' + ukuran.replace(/"/g, '&quot;') + '">' +
             '<input type="text" name="estimasi_harga[]" class="form-control form-control-sm" ' +
-            'placeholder="Contoh: Rp 400.000 / m2" value="' + harga.replace(/"/g, '&quot;') + '">' +
+            'placeholder="Contoh: Rp 400.000" value="' + harga.replace(/"/g, '&quot;') + '">' +
             '<button type="button" class="btn-hapus-baris" title="Hapus baris">' +
             '<i class="bi bi-trash"></i>' +
             '</button>';

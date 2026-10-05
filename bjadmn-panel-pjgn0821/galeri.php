@@ -195,9 +195,12 @@ $stmtSemuaFoto->close();
     }
 
     .harga-galeri {
+        display: inline-block;
+        max-width: 180px;
         color: #1d4ed8;
         font-weight: 700;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .btn-edit,
@@ -343,7 +346,7 @@ $stmtSemuaFoto->close();
                             <th>Foto</th>
                             <th>Judul</th>
                             <th>Layanan</th>
-                            <th>Harga / m²</th>
+                            <th>Harga</th>
                             <th>Keterangan</th>
                             <th>Tgl Selesai</th>
                             <th>Aksi</th>
@@ -396,9 +399,16 @@ $jsonFoto = json_encode($urlFoto, JSON_UNESCAPED_SLASHES);
                             </td>
                             <td><strong><?= htmlspecialchars($g['judul']) ?></strong></td>
                             <td><?= htmlspecialchars($g['nama_layanan'] ?? '-') ?></td>
-                            <td><?php if ((float)$g['harga'] > 0): ?><span class="harga-galeri">Rp
-                                    <?= number_format((float)$g['harga'],0,',','.') ?> /m²</span><?php else: ?><span
-                                    class="text-muted">-</span><?php endif; ?></td>
+
+                            <td class="kolom-harga">
+                                <?php if (trim((string)($g['harga'] ?? '')) !== ''): ?>
+                                <span class="harga-galeri">
+                                    <?= htmlspecialchars($g['harga'], ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                                <?php else: ?>
+                                <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-muted" style="max-width:200px;">
                                 <?= htmlspecialchars(mb_strimwidth($g['keterangan'],0,60,'...')) ?></td>
                             <td><?= htmlspecialchars($g['tgl_selesai']) ?></td>

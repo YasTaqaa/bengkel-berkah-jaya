@@ -10,7 +10,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama      = input_filter($conn, $_POST['nama']);
-    $harga     = (int)$_POST['harga'];
+    $harga     = input_filter($conn, $_POST['harga'] ?? '');
     $deskripsi = input_filter($conn, $_POST['deskripsi']);
     $urutan    = !empty($_POST['urutan']) ? (int)$_POST['urutan'] : 0;
 
@@ -24,8 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $foto = $result['file'];
 
-        $stmt = $conn->prepare("INSERT INTO layanan (nama, harga, deskripsi, urutan, foto) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("sisss", $nama, $harga, $deskripsi, $urutan, $foto);
+        $stmt = $conn->prepare("
+    INSERT INTO layanan (nama, harga, deskripsi, urutan, foto) 
+    VALUES (?, ?, ?, ?, ?)
+");
+
+$stmt->bind_param(
+    "sssis",
+    $nama,
+    $harga,
+    $deskripsi,
+    $urutan,
+    $foto
+);
         $stmt->execute();
         $layanan_id = $stmt->insert_id;
 
@@ -40,10 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($ukuran === '' || $nominal === '') continue;
 
                 $ukuranClean = input_filter($conn, $ukuran);
-                $nominalClean = (int)$nominal;
-                $urutanEst = $i;
+                $nominalClean = input_filter($conn, $nominal);
+$urutanEst = $i;
 
-                $stmtEst->bind_param("isii", $layanan_id, $ukuranClean, $nominalClean, $urutanEst);
+$stmtEst->bind_param(
+    "issi",
+    $layanan_id,
+    $ukuranClean,
+    $nominalClean,
+    $urutanEst
+);
                 $stmtEst->execute();
             }
         }
@@ -282,11 +299,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Harga Mulai (Rp / m&sup2;)</label>
-                    <input type="number" name="harga" class="form-control" min="0"
+                    <label class="form-label">Keterangan Harga</label>
+
+                    <input type="text" name="harga" class="form-control" placeholder="Contoh: 4000000"
                         value="<?php echo htmlspecialchars($_POST['harga'] ?? ''); ?>" required>
-                    <small class="text-muted">Cukup isi angka, contoh <code>400000</code>. Nanti otomatis tampil
-                        "Mulai Rp 400.000 / m&sup2;".</small>
+
+                    <small class="text-muted">
+                        Tulis harga sesuai jenis layanan, misalnya
+                        <code>4000000</code>, atau
+                        <code>Menyesuaikan kebutuhan</code>.
+                    </small>
                 </div>
 
                 <div class="mb-3">
@@ -319,7 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-2">
                     <div class="section-title-sm"><i class="bi bi-cash-coin me-1 text-primary"></i>Estimasi Harga per
                         Ukuran/Model</div>
-                    <small class="text-muted">Isi angka nominalnya saja, format "Rp ... / m&sup2;" otomatis
+                    <small class="text-muted">Isi angka nominalnya saja, format "Rp ..." otomatis
                         ditambahkan saat tampil di halaman depan.</small>
                 </div>
 
@@ -353,9 +375,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'placeholder="Contoh: Model standar, ukuran kecil" value="' + ukuran.replace(/"/g, '&quot;') + '">' +
             '<div class="estimasi-prefix estimasi-suffix">' +
             '<span class="prefix-text">Rp</span>' +
-            '<input type="number" name="estimasi_harga[]" class="form-control form-control-sm" min="0" ' +
-            'placeholder="400000" value="' + nominal.replace(/"/g, '&quot;') + '">' +
-            '<span class="suffix-text">/ m2</span>' +
+            '<input type="text" name="estimasi_harga[]" class="form-control form-control-sm" ' +
+            'placeholder="Contoh: 4000000 per meter" value="' +
+            nominal.replace(/"/g, '&quot;') + '">' +
+            '' +
             '</div>' +
             '<button type="button" class="btn-hapus-baris" title="Hapus baris">' +
             '<i class="bi bi-trash"></i>' +

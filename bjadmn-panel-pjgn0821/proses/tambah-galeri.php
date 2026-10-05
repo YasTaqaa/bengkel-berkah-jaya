@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $layanan_id  = ($_POST['layanan_id'] != '') ? (int)$_POST['layanan_id'] : null;
     $keterangan  = input_filter($conn, $_POST['keterangan']);
     $tgl_selesai = input_filter($conn, $_POST['tgl_selesai']);
-    $harga       = !empty($_POST['harga']) ? (int)$_POST['harga'] : null;
+    $harga = input_filter($conn, $_POST['harga'] ?? '');
 
     // Susun ulang array $_FILES['foto'] (multiple) jadi list per-file, buang slot kosong
     $fileList = [];
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fotoUtama = $uploadedFiles[0];
 
             $stmt = $conn->prepare("INSERT INTO galeri (judul, layanan_id, keterangan, tgl_selesai, foto, harga) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sisssi", $judul, $layanan_id, $keterangan, $tgl_selesai, $fotoUtama, $harga);
+            $stmt->bind_param("sissss", $judul, $layanan_id, $keterangan, $tgl_selesai, $fotoUtama, $harga);
             $stmt->execute();
             $galeri_id = $stmt->insert_id;
 
@@ -237,11 +237,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Harga Khusus untuk Model Ini (Rp / m&sup2;)</label>
-                    <input type="number" name="harga" class="form-control" min="0"
+                    <label class="form-label">Harga atau Keterangan Harga</label>
+
+                    <input type="text" name="harga" class="form-control" placeholder="Contoh: Rp 4.000.000 per paket"
                         value="<?php echo htmlspecialchars($_POST['harga'] ?? ''); ?>">
-                    <div class="harga-hint"><i class="bi bi-lightbulb me-1"></i>Opsional. Isi angka saja, contoh
-                        <code>450000</code>.
+
+                    <div class="harga-hint">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Opsional. Tulis harga sesuai model, misalnya “Rp 4.000.000 per paket”,
+                        “Mulai Rp 2.500.000”, atau “Hubungi kami untuk harga”.
                     </div>
                 </div>
 
