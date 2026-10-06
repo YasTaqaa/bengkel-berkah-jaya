@@ -151,85 +151,146 @@ if (layananSelect && galeriWrap && galeriIdInput) {
     const estimasiModelBox = document.getElementById('estimasiModelBox');
     const estimasiModelNilai = document.getElementById('estimasiModelNilai');
 
-    function formatRupiah(angka) {
-        return 'Rp ' + Number(angka).toLocaleString('id-ID');
+    // Harga sekarang berupa teks bebas, misalnya:
+    // "Rp 4.000.000 per paket", "Rp 750.000 per unit",
+    // atau "Menyesuaikan kebutuhan".
+    function formatHarga(harga) {
+        if (harga === null || harga === undefined) {
+            return '';
+        }
+
+        return String(harga).trim();
     }
 
-    // Kotak biru: kisaran umum begitu layanan dipilih
+    // Menghindari HTML dari database ditulis sebagai tag HTML.
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    }
+
+    // Kotak biru: estimasi umum setelah layanan dipilih.
     function updateEstimasiPreview() {
         const layananId = layananSelect.value;
-        if (!estimasiPreview || !estimasiPreviewRows) return;
 
-        if (!layananId) {
-            estimasiPreview.classList.remove('show');
+        if (!estimasiPreview || !estimasiPreviewRows) {
             return;
         }
 
-        const baris = dataEstimasi.filter(function (e) { return e.layanan_id == layananId; });
+        if (!layananId) {
+            estimasiPreview.classList.remove('show');
+            estimasiPreviewRows.innerHTML = '';
+            return;
+        }
+
+        const baris = dataEstimasi.filter(function (e) {
+            return String(e.layanan_id) === String(layananId);
+        });
+
         estimasiPreviewRows.innerHTML = '';
 
         if (baris.length > 0) {
             baris.forEach(function (e) {
+                const ukuranModel = escapeHtml(e.ukuran_model);
+                const hargaEstimasi = escapeHtml(formatHarga(e.estimasi_harga));
+
                 estimasiPreviewRows.innerHTML +=
                     '<div class="estimasi-preview-row">' +
-                    '<span>' + e.ukuran_model + '</span>' +
-                    '<span class="harga">' + formatRupiah(e.estimasi_harga) + ' /m2</span>' +
+                    '<span>' + ukuranModel + '</span>' +
+                    '<span class="harga">' + hargaEstimasi + '</span>' +
                     '</div>';
             });
-        } else if (dataHargaLayanan[layananId]) {
+        } else if (
+            dataHargaLayanan[layananId] &&
+            formatHarga(dataHargaLayanan[layananId].harga) !== ''
+        ) {
             estimasiPreviewRows.innerHTML =
                 '<div class="estimasi-preview-row">' +
-                '<span>Model standar</span>' +
-                '<span class="harga">Mulai ' + formatRupiah(dataHargaLayanan[layananId].harga) + ' /m2</span>' +
+                '<span>Harga layanan</span>' +
+                '<span class="harga">' +
+                escapeHtml(formatHarga(dataHargaLayanan[layananId].harga)) +
+                '</span>' +
+                '</div>';
+        } else {
+            estimasiPreviewRows.innerHTML =
+                '<div class="estimasi-preview-row">' +
+                '<span>Informasi harga</span>' +
+                '<span class="harga">Harga menyesuaikan kebutuhan</span>' +
                 '</div>';
         }
 
         estimasiPreview.classList.add('show');
     }
 
-    // Kotak hijau: harga presisi untuk kartu model yang diklik
+    // Kotak hijau: harga spesifik ketika pelanggan memilih model galeri.
     function updateEstimasiModel(galeriId) {
         const layananId = layananSelect.value;
-        if (!estimasiModelBox || !estimasiModelNilai) return;
 
-        if (!galeriId) {
-            estimasiModelBox.classList.remove('show');
+        if (!estimasiModelBox || !estimasiModelNilai) {
             return;
         }
 
-        const model = dataGaleri.find(function (g) { return g.id == galeriId; });
+        if (!galeriId) {
+            estimasiModelBox.classList.remove('show');
+            estimasiModelNilai.textContent = '';
+            return;
+        }
 
-        if (model && model.harga) {
-            estimasiModelNilai.textContent = formatRupiah(model.harga) + ' /m2';
+        const model = dataGaleri.find(function (g) {
+            return String(g.id) === String(galeriId);
+        });
+
+        if (model && formatHarga(model.harga) !== '') {
+            estimasiModelNilai.textContent = formatHarga(model.harga);
             estimasiModelBox.classList.add('show');
-        } else if (layananId && dataHargaLayanan[layananId]) {
-            estimasiModelNilai.textContent = 'Mulai ' + formatRupiah(dataHargaLayanan[layananId].harga) + ' /m2';
+        } else if (
+            layananId &&
+            dataHargaLayanan[layananId] &&
+            formatHarga(dataHargaLayanan[layananId].harga) !== ''
+        ) {
+            estimasiModelNilai.textContent =
+                formatHarga(dataHargaLayanan[layananId].harga);
+
             estimasiModelBox.classList.add('show');
         } else {
             estimasiModelBox.classList.remove('show');
+            estimasiModelNilai.textContent = '';
         }
     }
 
     function renderGaleriPilihan() {
         const layananId = layananSelect.value;
+
         galeriIdInput.value = '';
         galeriWrap.innerHTML = '';
         updateEstimasiModel('');
 
         if (!layananId) {
-            galeriWrap.innerHTML = '<p class="text-muted small mb-0">Pilih layanan terlebih dahulu untuk melihat model yang tersedia.</p>';
+            galeriWrap.innerHTML =
+                '<p class="text-muted small mb-0">' +
+                'Pilih layanan terlebih dahulu untuk melihat model yang tersedia.' +
+                '</p>';
             return;
         }
 
         const filtered = dataGaleri.filter(function (g) {
-        const layananGaleri =
-        g.layanan_id ?? g.layananid ?? g.layananId;
+            const layananGaleri =
+                g.layanan_id ?? g.layananid ?? g.layananId;
 
-        return String(layananGaleri) === String(layananId);
+            return String(layananGaleri) === String(layananId);
         });
 
         if (filtered.length === 0) {
-            galeriWrap.innerHTML = '<p class="text-muted small mb-0">Belum ada model untuk layanan ini.</p>';
+            galeriWrap.innerHTML =
+                '<p class="text-muted small mb-0">' +
+                'Belum ada model untuk layanan ini.' +
+                '</p>';
             return;
         }
 
@@ -241,30 +302,45 @@ if (layananSelect && galeriWrap && galeriIdInput) {
         noneCard.innerHTML =
             '<input type="radio" name="galeri_pilih_radio" value="" checked>' +
             '<div class="galeri-pilih-none-inner">' +
-            '<i class="bi bi-slash-circle"></i><span>Tidak pilih model</span>' +
+            '<i class="bi bi-slash-circle"></i>' +
+            '<span>Tidak pilih model</span>' +
             '</div>';
+
         grid.appendChild(noneCard);
 
         filtered.forEach(function (g) {
             const card = document.createElement('label');
+            const judul = escapeHtml(g.judul ?? 'Model galeri');
+            const foto = encodeURI(String(g.foto ?? ''));
+
             card.className = 'galeri-pilih-card';
             card.innerHTML =
-                '<input type="radio" name="galeri_pilih_radio" value="' + g.id + '">' +
-                '<img src="assets/img/galeri/' + g.foto + '" alt="' + g.judul + '" loading="lazy" ' +
-                'onerror="this.src=\'\'; this.alt=\'Gambar tidak tersedia\'">' +
-                '<span class="galeri-pilih-title">' + g.judul + '</span>';
+                '<input type="radio" name="galeri_pilih_radio" value="' +
+                escapeHtml(g.id) + '">' +
+                '<img src="assets/img/galeri/' + foto + '"' +
+                ' alt="' + judul + '" loading="lazy"' +
+                ' onerror="this.src=\'\'; this.alt=\'Gambar tidak tersedia\'">' +
+                '<span class="galeri-pilih-title">' + judul + '</span>';
+
             grid.appendChild(card);
         });
 
         galeriWrap.appendChild(grid);
 
-        grid.querySelectorAll('input[type=radio]').forEach(function (radio) {
+        grid.querySelectorAll('input[type="radio"]').forEach(function (radio) {
             radio.addEventListener('change', function () {
                 galeriIdInput.value = this.value;
-                grid.querySelectorAll('.galeri-pilih-card').forEach(function (c) {
-                    c.classList.remove('active');
+
+                grid.querySelectorAll('.galeri-pilih-card').forEach(function (card) {
+                    card.classList.remove('active');
                 });
-                this.closest('.galeri-pilih-card').classList.add('active');
+
+                const parentCard = this.closest('.galeri-pilih-card');
+
+                if (parentCard) {
+                    parentCard.classList.add('active');
+                }
+
                 updateEstimasiModel(this.value);
             });
         });
